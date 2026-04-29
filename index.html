@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SWEEPS</title>
+<meta name="theme-color" content="#0d0d0d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SWEEPS">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --card: #161616;
+    --border: #2a2a2a;
+    --accent: #c8f135;
+    --accent-dim: #9ab82a;
+    --text: #f0f0f0;
+    --muted: #666;
+    --done-bg: #1a2200;
+    --done-border: #4a6600;
+    --fail-bg: #1a0a00;
+    --fail-border: #5a2000;
+    --fail-accent: #ff6b35;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    padding: 24px 16px 80px;
+  }
+
+  header { text-align: center; margin-bottom: 28px; }
+
+  .title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(52px, 12vw, 96px);
+    letter-spacing: 4px;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .subtitle { font-size: 13px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-top: 6px; }
+
+  /* ── Setup screen ── */
+  #setupScreen {
+    max-width: 440px;
+    margin: 0 auto;
+  }
+
+  .setup-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px 24px;
+    margin-bottom: 16px;
+  }
+
+  .setup-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    margin-bottom: 20px;
+  }
+
+  .field { margin-bottom: 18px; }
+  .field:last-child { margin-bottom: 0; }
+
+  .field label {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .field input[type="date"],
+  .field input[type="number"] {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+    color-scheme: dark;
+  }
+
+  .field input:focus { border-color: var(--accent); }
+
+  .field .unit {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .field .unit input { flex: 1; }
+  .field .unit span { font-size: 12px; color: var(--muted); white-space: nowrap; }
+
+  .btn-start {
+    width: 100%;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 12px;
+    padding: 16px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 3px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    margin-top: 8px;
+  }
+
+  .btn-start:hover { opacity: 0.85; }
+
+  /* ── Main tracker ── */
+  #trackerScreen { display: none; }
+
+  .top-bar {
+    max-width: 480px;
+    margin: 0 auto 16px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
+  .icon-btn {
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 8px;
+    padding: 7px 12px;
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .stats-row {
+    max-width: 480px;
+    margin: 0 auto 24px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+  }
+
+  .stat-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 12px;
+    text-align: center;
+  }
+
+  .stat-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32px;
+    line-height: 1;
+  }
+
+  .stat-num.green { color: var(--accent); }
+  .stat-num.orange { color: var(--fail-accent); }
+  .stat-num.white { color: var(--text); }
+
+  .stat-label { font-size: 10px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; margin-top: 4px; }
+
+  .day-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .day-nav button {
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color 0.15s, color 0.15s;
+  }
+
+  .day-nav button:hover { border-color: var(--accent); color: var(--accent); }
+  .day-nav button:disabled { opacity: 0.2; cursor: default; }
+
+  .day-label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 2px;
+    min-width: 160px;
+    text-align: center;
+  }
+
+  .day-label span {
+    display: block;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  .day-label .penalty-tag {
+    display: inline-block;
+    background: var(--fail-accent);
+    color: #000;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 2px 7px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  .progress-bar-wrap {
+    max-width: 480px;
+    margin: 0 auto 24px;
+    padding: 0 4px;
+  }
+
+  .progress-top {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .progress-track { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.4s cubic-bezier(.4,0,.2,1);
+  }
+
+  .day-strip {
+    max-width: 480px;
+    margin: 0 auto 24px;
+    display: flex;
+    gap: 5px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+
+  .day-strip::-webkit-scrollbar { display: none; }
+
+  .day-pip { flex-shrink: 0; width: 26px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
+  .day-pip-num { font-size: 9px; color: var(--muted); font-weight: 500; }
+  .day-pip-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); transition: background 0.2s; }
+  .day-pip.active .day-pip-num { color: var(--accent); }
+  .day-pip.active .day-pip-dot { background: var(--accent); }
+  .day-pip.complete .day-pip-dot { background: var(--accent-dim); }
+  .day-pip.failed .day-pip-dot { background: var(--fail-accent); }
+  .day-pip.penalty .day-pip-dot { background: #333; border: 1px solid var(--fail-accent); }
+  .day-pip.penalty .day-pip-num { color: var(--fail-accent); }
+  .day-pip.future { opacity: 0.3; cursor: default; }
+
+  .habits {
+    max-width: 480px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .habit-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s, transform 0.1s;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .habit-card:active { transform: scale(0.985); }
+  .habit-card.done { background: var(--done-bg); border-color: var(--done-border); }
+  .habit-card.done .letter { color: var(--accent); border-color: var(--accent); }
+  .habit-card.done .habit-name { color: var(--accent-dim); text-decoration: line-through; text-decoration-color: #4a6600; }
+  .habit-card.done .habit-desc { color: #3a5200; }
+  .habit-card.locked { opacity: 0.4; cursor: default; }
+
+  .letter {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    width: 44px; height: 44px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: color 0.2s, border-color 0.2s;
+  }
+
+  .habit-info { flex: 1; }
+  .habit-name { font-size: 15px; font-weight: 500; letter-spacing: 0.3px; }
+  .habit-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  .check {
+    width: 24px; height: 24px;
+    border: 1.5px solid var(--border);
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .habit-card.done .check { border-color: var(--accent); background: var(--accent); }
+  .check svg { display: none; }
+  .habit-card.done .check svg { display: block; }
+
+  .exercise-row {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .exercise-row.week-done { background: var(--done-bg); border-color: var(--done-border); }
+  .exercise-row.week-failed { border-color: var(--fail-border); }
+
+  .exercise-top { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; }
+  .workout-dots { display: flex; gap: 10px; padding-left: 60px; }
+
+  .dot {
+    width: 38px; height: 38px;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    transition: border-color 0.2s, background 0.2s, color 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .dot.lit { border-color: var(--accent); background: var(--accent); color: #000; }
+
+  /* Week failure banner */
+  .week-fail-banner {
+    max-width: 480px;
+    margin: 0 auto 10px;
+    background: var(--fail-bg);
+    border: 1px solid var(--fail-border);
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-size: 12px;
+    color: var(--fail-accent);
+    letter-spacing: 0.5px;
+    display: none;
+  }
+
+  /* Share modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px 24px;
+    width: 100%;
+    max-width: 400px;
+  }
+
+  .modal-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
+
+  .modal p { font-size: 13px; color: var(--muted); margin-bottom: 16px; line-height: 1.6; }
+
+  .url-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--muted);
+    word-break: break-all;
+    margin-bottom: 16px;
+    font-family: monospace;
+  }
+
+  .modal-btns { display: flex; gap: 10px; }
+
+  .btn-copy {
+    flex: 1;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 10px;
+    padding: 12px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    letter-spacing: 2px;
+    cursor: pointer;
+  }
+
+  .btn-close {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  /* Penalty day overlay */
+  .penalty-overlay {
+    background: var(--fail-bg);
+    border: 1px solid var(--fail-border);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  .penalty-overlay .po-icon { font-size: 32px; margin-bottom: 8px; }
+  .penalty-overlay .po-title { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 2px; color: var(--fail-accent); }
+  .penalty-overlay .po-sub { font-size: 13px; color: var(--muted); margin-top: 6px; line-height: 1.5; }
+
+  .confetti { position: fixed; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; z-index: 100; overflow: hidden; }
+
+  .confetti-piece {
+    position: absolute;
+    width: 8px; height: 8px;
+    opacity: 0;
+    animation: fall 1.2s ease-in forwards;
+  }
+
+  @keyframes fall {
+    0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="title">SWEEPS</div>
+  <div class="subtitle" id="mainSubtitle">75 Medium Challenge</div>
+</header>
+
+<!-- SETUP SCREEN -->
+<div id="setupScreen">
+  <div class="setup-card">
+    <div class="setup-title">Your Goals</div>
+
+    <div class="field">
+      <label>Start Date</label>
+      <input type="date" id="startDate" />
+    </div>
+
+    <div class="field">
+      <label>Water Goal</label>
+      <div class="unit">
+        <input type="number" id="goalWater" value="128" min="1" max="256" />
+        <span>oz / day</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Steps Goal</label>
+      <div class="unit">
+        <input type="number" id="goalSteps" value="10000" min="1000" max="50000" step="500" />
+        <span>steps / day</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Pages Goal</label>
+      <div class="unit">
+        <input type="number" id="goalPages" value="10" min="1" max="100" />
+        <span>pages / day</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Workouts per Week</label>
+      <div class="unit">
+        <input type="number" id="goalWorkouts" value="4" min="1" max="7" />
+        <span>workouts / week</span>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn-start" onclick="startChallenge()">START SWEEPS</button>
+</div>
+
+<!-- TRACKER SCREEN -->
+<div id="trackerScreen">
+  <div class="top-bar">
+    <button class="icon-btn" onclick="openShare()">⬆ Share</button>
+    <button class="icon-btn" onclick="resetToSetup()">⚙ Settings</button>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-box">
+      <div class="stat-num green" id="statDay">1</div>
+      <div class="stat-label">Current Day</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-num white" id="statGoal">75</div>
+      <div class="stat-label">Goal Days</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-num orange" id="statPenalty">0</div>
+      <div class="stat-label">Penalty Days</div>
+    </div>
+  </div>
+
+  <div class="day-nav">
+    <button id="prevBtn">‹</button>
+    <div class="day-label" id="dayLabel">DAY 1<span></span></div>
+    <button id="nextBtn">›</button>
+  </div>
+
+  <div class="progress-bar-wrap">
+    <div class="progress-top">
+      <span>Today's progress</span>
+      <span id="progressPct">0%</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill" style="width:0%"></div>
+    </div>
+  </div>
+
+  <div class="day-strip" id="dayStrip"></div>
+
+  <div class="week-fail-banner" id="weekFailBanner"></div>
+
+  <div class="habits" id="habitsContainer"></div>
+</div>
+
+<!-- Share Modal -->
+<div class="modal-overlay" id="shareModal">
+  <div class="modal">
+    <div class="modal-title">Share SWEEPS</div>
+    <p>Send this link to your friends. They'll be able to set their own start date and goals — your progress stays separate.</p>
+    <div class="url-box" id="shareUrl"></div>
+    <div class="modal-btns">
+      <button class="btn-copy" onclick="copyUrl()">COPY LINK</button>
+      <button class="btn-close" onclick="closeShare()">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="confetti" id="confetti"></div>
+
+<script>
+// ── Constants ──────────────────────────────────────────────
+const BASE_DAYS = 75;
+const STORAGE_KEY = 'sweeps_v2';
+
+// ── State ──────────────────────────────────────────────────
+let cfg = null;   // { startDate, goalWater, goalSteps, goalPages, goalWorkouts }
+let data = {};    // day/week check data
+let currentDay = 1;
+
+// ── Persistence ────────────────────────────────────────────
+function loadStore() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; }
+}
+function saveStore() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ cfg, data }));
+}
+
+// ── URL param helpers ──────────────────────────────────────
+// Share URL only encodes the blank template config (no progress data)
+function buildShareUrl() {
+  const base = location.href.split('?')[0].split('#')[0];
+  const params = new URLSearchParams({
+    sw: 1,  // sweeps flag
+    // no start date — recipient sets their own
+    w: cfg.goalWater,
+    s: cfg.goalSteps,
+    p: cfg.goalPages,
+    wk: cfg.goalWorkouts,
+  });
+  return `${base}?${params.toString()}`;
+}
+
+function readUrlParams() {
+  const p = new URLSearchParams(location.search);
+  if (!p.get('sw')) return null;
+  return {
+    goalWater: parseInt(p.get('w')) || 128,
+    goalSteps: parseInt(p.get('s')) || 10000,
+    goalPages: parseInt(p.get('p')) || 10,
+    goalWorkouts: parseInt(p.get('wk')) || 4,
+  };
+}
+
+// ── Date helpers ───────────────────────────────────────────
+function parseDate(str) {
+  const [y,m,d] = str.split('-').map(Number);
+  return new Date(y, m-1, d);
+}
+
+function formatDate(n) {
+  const d = new Date(parseDate(cfg.startDate));
+  d.setDate(d.getDate() + n - 1);
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+function getTodayDayNum() {
+  const now = new Date(); now.setHours(0,0,0,0);
+  const start = parseDate(cfg.startDate); start.setHours(0,0,0,0);
+  return Math.max(1, Math.floor((now - start) / 86400000) + 1);
+}
+
+function getWeekNum(n) { return Math.ceil(n / 7); }
+
+// ── Data accessors ─────────────────────────────────────────
+function getDayChecks(n) { return data[`day_${n}`] || {}; }
+function setDayCheck(n, id, val) {
+  if (!data[`day_${n}`]) data[`day_${n}`] = {};
+  data[`day_${n}`][id] = val;
+  saveStore();
+}
+function getWeekWorkouts(w) { return data[`week_${w}`] || 0; }
+function setWeekWorkouts(w, c) { data[`week_${w}`] = c; saveStore(); }
+
+// ── Penalty logic ──────────────────────────────────────────
+// A past day fails if ANY daily habit is unchecked
+function isDayFailed(n) {
+  const checks = getDayChecks(n);
+  return ['stretch','water','eat','pages','steps'].some(id => !checks[id]);
+}
+
+// A past week fails if workouts < goal (evaluated at end of each 7-day week)
+function isWeekFailed(w) {
+  return getWeekWorkouts(w) < cfg.goalWorkouts;
+}
+
+// Calculate total penalty days accrued so far (only for days/weeks in the past)
+function calcPenaltyDays(todayNum) {
+  let penalty = 0;
+  // Daily habit failures for days 1..todayNum-1 (yesterday and before)
+  for (let d = 1; d < todayNum; d++) {
+    if (isDayFailed(d)) penalty += 2;
+  }
+  // Weekly exercise failures: only count completed weeks
+  const completedWeeks = Math.floor((todayNum - 1) / 7);
+  for (let w = 1; w <= completedWeeks; w++) {
+    if (isWeekFailed(w)) penalty += 2;
+  }
+  return penalty;
+}
+
+function getTotalGoal(todayNum) {
+  return BASE_DAYS + calcPenaltyDays(todayNum);
+}
+
+// Is this day a "penalty extension" day (beyond original 75)?
+function isPenaltyDay(n) { return n > BASE_DAYS; }
+
+// ── Day complete check (for strip coloring) ────────────────
+function isDayComplete(n) {
+  return !isDayFailed(n);
+}
+
+// ── Setup ──────────────────────────────────────────────────
+function startChallenge() {
+  const startDateVal = document.getElementById('startDate').value;
+  if (!startDateVal) { alert('Please pick a start date.'); return; }
+  cfg = {
+    startDate: startDateVal,
+    goalWater: parseInt(document.getElementById('goalWater').value) || 128,
+    goalSteps: parseInt(document.getElementById('goalSteps').value) || 10000,
+    goalPages: parseInt(document.getElementById('goalPages').value) || 10,
+    goalWorkouts: parseInt(document.getElementById('goalWorkouts').value) || 4,
+  };
+  data = {};
+  saveStore();
+  showTracker();
+}
+
+function resetToSetup() {
+  if (!confirm('Go back to settings? Your progress will be kept.')) return;
+  showSetup();
+}
+
+function showSetup() {
+  document.getElementById('setupScreen').style.display = 'block';
+  document.getElementById('trackerScreen').style.display = 'none';
+  if (cfg) {
+    document.getElementById('startDate').value = cfg.startDate;
+    document.getElementById('goalWater').value = cfg.goalWater;
+    document.getElementById('goalSteps').value = cfg.goalSteps;
+    document.getElementById('goalPages').value = cfg.goalPages;
+    document.getElementById('goalWorkouts').value = cfg.goalWorkouts;
+  }
+}
+
+function showTracker() {
+  document.getElementById('setupScreen').style.display = 'none';
+  document.getElementById('trackerScreen').style.display = 'block';
+  currentDay = Math.min(getTodayDayNum(), getTotalGoal(getTodayDayNum()));
+  render();
+}
+
+// ── Render ─────────────────────────────────────────────────
+function render() {
+  const todayNum = getTodayDayNum();
+  const penalty = calcPenaltyDays(todayNum);
+  const totalGoal = BASE_DAYS + penalty;
+  const checks = getDayChecks(currentDay);
+  const weekNum = getWeekNum(currentDay);
+  const workouts = getWeekWorkouts(weekNum);
+  const isFuture = currentDay > todayNum;
+  const isPenalty = isPenaltyDay(currentDay);
+  const exDone = workouts >= cfg.goalWorkouts;
+
+  // Subtitle
+  document.getElementById('mainSubtitle').textContent =
+    `Started ${new Date(parseDate(cfg.startDate)).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`;
+
+  // Stats
+  document.getElementById('statDay').textContent = Math.min(todayNum, totalGoal);
+  document.getElementById('statGoal').textContent = totalGoal;
+  document.getElementById('statPenalty').textContent = penalty;
+
+  // Day label
+  const penaltyTag = isPenalty ? `<div class="penalty-tag">+2 Penalty Day</div>` : '';
+  document.getElementById('dayLabel').innerHTML =
+    `DAY ${currentDay}<span>${formatDate(currentDay)}</span>${penaltyTag}`;
+
+  // Nav
+  document.getElementById('prevBtn').disabled = currentDay <= 1;
+  document.getElementById('nextBtn').disabled = currentDay >= Math.min(todayNum, totalGoal);
+
+  // Progress (5 daily + exercise = 6 total for today)
+  const dailyIds = ['stretch','water','eat','pages','steps'];
+  const checkedCount = dailyIds.filter(id => checks[id]).length + (exDone ? 1 : 0);
+  const pct = Math.round((checkedCount / 6) * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressPct').textContent = pct + '%';
+
+  // Day strip — show all days up to totalGoal
+  const strip = document.getElementById('dayStrip');
+  strip.innerHTML = '';
+  for (let d = 1; d <= totalGoal; d++) {
+    const pip = document.createElement('div');
+    const past = d < todayNum;
+    const isActive = d === currentDay;
+    const isFut = d > todayNum;
+    const isPen = d > BASE_DAYS;
+    let cls = 'day-pip';
+    if (isActive) cls += ' active';
+    else if (isPen && isFut) cls += ' penalty future';
+    else if (isPen) cls += ' penalty';
+    else if (isFut) cls += ' future';
+    else if (past && isDayComplete(d)) cls += ' complete';
+    else if (past) cls += ' failed';
+    pip.className = cls;
+    pip.innerHTML = `<div class="day-pip-num">${d}</div><div class="day-pip-dot"></div>`;
+    if (!isFut || isPen) pip.onclick = () => { if (d <= Math.min(todayNum, totalGoal)) { currentDay = d; render(); } };
+    strip.appendChild(pip);
+    if (isActive) setTimeout(() => pip.scrollIntoView({ inline: 'center', behavior: 'smooth' }), 50);
+  }
+
+  // Week fail banner (for the current week if it's over)
+  const banner = document.getElementById('weekFailBanner');
+  const currentWeekComplete = (currentDay % 7 === 0); // last day of week
+  const prevWeekNum = getWeekNum(currentDay - 1);
+  const showBanner = currentDay > 1 && (currentDay % 7 === 1) && isWeekFailed(prevWeekNum);
+  if (showBanner) {
+    banner.style.display = 'block';
+    banner.textContent = `⚠ Week ${prevWeekNum} ended with only ${getWeekWorkouts(prevWeekNum)}/${cfg.goalWorkouts} workouts — +2 penalty days added.`;
+  } else {
+    banner.style.display = 'none';
+  }
+
+  // Habits container
+  const container = document.getElementById('habitsContainer');
+  container.innerHTML = '';
+
+  // If it's a future penalty day, show placeholder
+  if (isFuture && isPenalty) {
+    const po = document.createElement('div');
+    po.className = 'penalty-overlay';
+    po.innerHTML = `
+      <div class="po-icon">🔒</div>
+      <div class="po-title">Penalty Day ${currentDay}</div>
+      <div class="po-sub">This day was added because of a missed habit.<br>Keep going — you've got this.</div>`;
+    container.appendChild(po);
+    return;
+  }
+
+  // S — Stretch
+  container.appendChild(makeHabitCard(
+    { id:'stretch', letter:'S', name:'Stretch', desc:'Once daily' },
+    !!checks.stretch, isFuture
+  ));
+
+  // W — Water
+  container.appendChild(makeHabitCard(
+    { id:'water', letter:'W', name:'Water', desc:`${cfg.goalWater} oz / day` },
+    !!checks.water, isFuture
+  ));
+
+  // E — Eat
+  container.appendChild(makeHabitCard(
+    { id:'eat', letter:'E', name:'Eat', desc:'Calorie deficit' },
+    !!checks.eat, isFuture
+  ));
+
+  // E — Exercise (weekly)
+  const exCard = document.createElement('div');
+  exCard.className = 'exercise-row' + (exDone ? ' week-done' : '');
+  exCard.innerHTML = `
+    <div class="exercise-top">
+      <div class="letter" style="${exDone ? 'color:var(--accent);border-color:var(--accent)' : ''}">E</div>
+      <div class="habit-info">
+        <div class="habit-name" style="${exDone ? 'color:var(--accent-dim)' : ''}">Exercise</div>
+        <div class="habit-desc" style="${exDone ? 'color:#3a5200' : ''}">${cfg.goalWorkouts} workouts this week · Week ${weekNum}</div>
+      </div>
+    </div>
+    <div class="workout-dots" id="workoutDots"></div>`;
+  container.appendChild(exCard);
+
+  for (let i = 1; i <= cfg.goalWorkouts; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'dot' + (i <= workouts ? ' lit' : '');
+    dot.textContent = i;
+    if (!isFuture) {
+      dot.onclick = () => {
+        const cur = getWeekWorkouts(weekNum);
+        const next = i <= cur ? i - 1 : i;
+        setWeekWorkouts(weekNum, next);
+        if (next > cur) maybeConfetti();
+        render();
+      };
+    }
+    document.getElementById('workoutDots').appendChild(dot);
+  }
+
+  // P — Pages
+  container.appendChild(makeHabitCard(
+    { id:'pages', letter:'P', name:'Pages', desc:`${cfg.goalPages} pages / day` },
+    !!checks.pages, isFuture
+  ));
+
+  // S — Steps
+  container.appendChild(makeHabitCard(
+    { id:'steps', letter:'S', name:'Steps', desc:`${cfg.goalSteps.toLocaleString()} steps / day` },
+    !!checks.steps, isFuture
+  ));
+}
+
+function makeHabitCard(h, checked, isFuture) {
+  const card = document.createElement('div');
+  card.className = 'habit-card' + (checked ? ' done' : '') + (isFuture ? ' locked' : '');
+  card.innerHTML = `
+    <div class="letter">${h.letter}</div>
+    <div class="habit-info">
+      <div class="habit-name">${h.name}</div>
+      <div class="habit-desc">${h.desc}</div>
+    </div>
+    <div class="check">
+      <svg width="12" height="10" viewBox="0 0 12 10" fill="none">
+        <path d="M1 5L4.5 8.5L11 1" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>`;
+  if (!isFuture) {
+    card.onclick = () => {
+      const prev = !!getDayChecks(currentDay)[h.id];
+      setDayCheck(currentDay, h.id, !prev);
+      if (!prev) maybeConfetti();
+      render();
+    };
+  }
+  return card;
+}
+
+// ── Share ──────────────────────────────────────────────────
+function openShare() {
+  document.getElementById('shareUrl').textContent = buildShareUrl();
+  document.getElementById('shareModal').classList.add('open');
+}
+
+function closeShare() {
+  document.getElementById('shareModal').classList.remove('open');
+}
+
+function copyUrl() {
+  navigator.clipboard.writeText(buildShareUrl()).then(() => {
+    const btn = document.querySelector('.btn-copy');
+    btn.textContent = 'COPIED!';
+    setTimeout(() => btn.textContent = 'COPY LINK', 2000);
+  });
+}
+
+// ── Confetti ───────────────────────────────────────────────
+function maybeConfetti() {
+  const colors = ['#c8f135','#fff','#9ab82a','#e0ff80'];
+  const el = document.getElementById('confetti');
+  el.innerHTML = '';
+  for (let i = 0; i < 30; i++) {
+    const p = document.createElement('div');
+    p.className = 'confetti-piece';
+    p.style.cssText = `left:${Math.random()*100}%;top:${Math.random()*-10}%;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'2px'};animation-delay:${Math.random()*.4}s;animation-duration:${.8+Math.random()*.6}s;`;
+    el.appendChild(p);
+  }
+  setTimeout(() => el.innerHTML = '', 1500);
+}
+
+// ── Nav buttons ────────────────────────────────────────────
+document.getElementById('prevBtn').onclick = () => { if (currentDay > 1) { currentDay--; render(); } };
+document.getElementById('nextBtn').onclick = () => {
+  const todayNum = getTodayDayNum();
+  const totalGoal = getTotalGoal(todayNum);
+  if (currentDay < Math.min(todayNum, totalGoal)) { currentDay++; render(); }
+};
+
+// ── Boot ───────────────────────────────────────────────────
+(function init() {
+  // Check URL params first (shared link)
+  const urlParams = readUrlParams();
+  const stored = loadStore();
+
+  // Default start date to today
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+  document.getElementById('startDate').value = todayStr;
+
+  if (urlParams) {
+    // Coming from a shared link — pre-fill goals but force setup
+    document.getElementById('goalWater').value = urlParams.goalWater;
+    document.getElementById('goalSteps').value = urlParams.goalSteps;
+    document.getElementById('goalPages').value = urlParams.goalPages;
+    document.getElementById('goalWorkouts').value = urlParams.goalWorkouts;
+    // If they also have stored data, load it; otherwise fresh
+    if (stored.cfg) {
+      cfg = stored.cfg; data = stored.data || {};
+      showTracker();
+    } else {
+      showSetup();
+    }
+  } else if (stored.cfg) {
+    // Returning user
+    cfg = stored.cfg; data = stored.data || {};
+    showTracker();
+  } else {
+    showSetup();
+  }
+})();
+</script>
+<script>
+  // Register service worker for PWA offline support
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    });
+  }
+</script>
+</body>
+</html>
