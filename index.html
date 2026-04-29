@@ -237,31 +237,6 @@
     margin-top: 4px;
   }
 
-  .progress-bar-wrap {
-    max-width: 480px;
-    margin: 0 auto 24px;
-    padding: 0 4px;
-  }
-
-  .progress-top {
-    display: flex;
-    justify-content: space-between;
-    font-size: 11px;
-    letter-spacing: 1px;
-    color: var(--muted);
-    text-transform: uppercase;
-    margin-bottom: 8px;
-  }
-
-  .progress-track { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
-
-  .progress-fill {
-    height: 100%;
-    background: var(--accent);
-    border-radius: 2px;
-    transition: width 0.4s cubic-bezier(.4,0,.2,1);
-  }
-
   .day-strip {
     max-width: 480px;
     margin: 0 auto 24px;
@@ -570,15 +545,6 @@
     <button id="nextBtn">›</button>
   </div>
 
-  <div class="progress-bar-wrap">
-    <div class="progress-top">
-      <span>Today's progress</span>
-      <span id="progressPct">0%</span>
-    </div>
-    <div class="progress-track">
-      <div class="progress-fill" id="progressFill" style="width:0%"></div>
-    </div>
-  </div>
 
   <div class="day-strip" id="dayStrip"></div>
 
@@ -719,14 +685,21 @@ function isDayComplete(n) {
 function startChallenge() {
   const startDateVal = document.getElementById('startDate').value;
   if (!startDateVal) { alert('Please pick a start date.'); return; }
-  cfg = {
+
+  const newCfg = {
     startDate: startDateVal,
     goalWater: parseInt(document.getElementById('goalWater').value) || 128,
     goalSteps: parseInt(document.getElementById('goalSteps').value) || 10000,
     goalPages: parseInt(document.getElementById('goalPages').value) || 10,
     goalWorkouts: parseInt(document.getElementById('goalWorkouts').value) || 4,
   };
-  data = {};
+
+  // Only wipe progress if this is a brand new challenge (no existing data)
+  // Returning from Settings preserves all progress
+  const isNewChallenge = !cfg;
+  cfg = newCfg;
+  if (isNewChallenge) data = {};
+
   saveStore();
   showTracker();
 }
@@ -784,13 +757,6 @@ function render() {
   // Nav
   document.getElementById('prevBtn').disabled = currentDay <= 1;
   document.getElementById('nextBtn').disabled = currentDay >= Math.min(todayNum, totalGoal);
-
-  // Progress (5 daily + exercise = 6 total for today)
-  const dailyIds = ['stretch','water','eat','pages','steps'];
-  const checkedCount = dailyIds.filter(id => checks[id]).length + (exDone ? 1 : 0);
-  const pct = Math.round((checkedCount / 6) * 100);
-  document.getElementById('progressFill').style.width = pct + '%';
-  document.getElementById('progressPct').textContent = pct + '%';
 
   // Day strip — show all days up to totalGoal
   const strip = document.getElementById('dayStrip');
