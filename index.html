@@ -879,9 +879,9 @@ function render() {
     !!checks.stretch, isFuture
   ));
 
-  // W — Water (Owala bubbles for admin, regular checkbox for everyone else)
-  if (isAdmin) {
-    const OWALA_COUNT = 5; // 5 x 30oz Owalas ≈ 128oz gallon
+  // W — Water (Owala bubbles if admin, regular checkbox otherwise)
+  if (isAdmin()) {
+    const OWALA_COUNT = 5;
     const owalaFilled = getDayChecks(currentDay).owala || 0;
     const allDone = owalaFilled >= OWALA_COUNT;
 
@@ -889,7 +889,7 @@ function render() {
     owalaCard.className = 'owala-row' + (allDone ? ' all-done' : '');
     owalaCard.innerHTML = `
       <div class="owala-top">
-        <div class="letter" style="${allDone ? 'color:var(--accent);border-color:var(--accent)' : ''}">W</div>
+        <div class="letter" id="wLetter" style="${allDone ? 'color:var(--accent);border-color:var(--accent)' : ''};cursor:pointer;">W</div>
         <div class="habit-info">
           <div class="habit-name" style="${allDone ? 'color:var(--accent-dim);text-decoration:line-through;text-decoration-color:#4a6600' : ''}">Water</div>
           <div class="habit-desc" style="${allDone ? 'color:#3a5200' : ''}">${owalaFilled}/${OWALA_COUNT} Owalas · ${owalaFilled * 30}/${OWALA_COUNT * 30} oz</div>
@@ -898,10 +898,9 @@ function render() {
       <div class="owala-bubbles" id="OwalasBubbles"></div>`;
     container.appendChild(owalaCard);
 
-    // Also sync water checkbox state with owala completion
-    if (!isFuture) {
-      setDayCheck(currentDay, 'water', allDone);
-    }
+    document.getElementById('wLetter').addEventListener('click', handleWTripleTap);
+
+    if (!isFuture) setDayCheck(currentDay, 'water', allDone);
 
     const bubblesContainer = document.getElementById('OwalasBubbles');
     for (let i = 1; i <= OWALA_COUNT; i++) {
@@ -911,11 +910,9 @@ function render() {
       if (!isFuture) {
         bubble.onclick = () => {
           const cur = getDayChecks(currentDay).owala || 0;
-          // Tap filled bubble to unfill, tap unfilled to fill up to that point
           const next = i <= cur ? i - 1 : i;
           if (!data[`day_${currentDay}`]) data[`day_${currentDay}`] = {};
           data[`day_${currentDay}`].owala = next;
-          // Mark water done if all filled
           data[`day_${currentDay}`].water = next >= OWALA_COUNT;
           saveStore();
           if (next > cur) maybeConfetti();
@@ -925,10 +922,14 @@ function render() {
       bubblesContainer.appendChild(bubble);
     }
   } else {
-    container.appendChild(makeHabitCard(
+    // Non-admin: regular water card with triple-tap W to unlock Owala mode
+    const regularCard = makeHabitCard(
       { id:'water', letter:'W', name:'Water', desc:`${cfg.goalWater} oz / day` },
       !!checks.water, isFuture
-    ));
+    );
+    // Attach triple-tap to the W letter box
+    regularCard.querySelector('.letter').addEventListener('click', handleWTripleTap);
+    container.appendChild(regularCard);
   }
 
   // E — Eat
@@ -1219,16 +1220,28 @@ document.getElementById('nextBtn').onclick = () => {
   if (currentDay < Math.min(todayNum, totalGoal)) { currentDay++; render(); }
 };
 
-// ── Admin flag (Owala mode) ────────────────────────────────
-// Activated via ?admin=1 in the URL — persists in localStorage
+// ── Owala mode — activated by tapping W letter 3 times ────
 const ADMIN_KEY = 'sweeps_admin';
+let wTapCount = 0, wTapTimer = null;
+
 function checkAdmin() {
-  if (new URLSearchParams(location.search).get('admin') === '1') {
-    localStorage.setItem(ADMIN_KEY, '1');
-  }
   return localStorage.getItem(ADMIN_KEY) === '1';
 }
-const isAdmin = checkAdmin();
+
+function handleWTripleTap() {
+  wTapCount++;
+  clearTimeout(wTapTimer);
+  if (wTapCount >= 3) {
+    wTapCount = 0;
+    const current = localStorage.getItem(ADMIN_KEY) === '1';
+    localStorage.setItem(ADMIN_KEY, current ? '0' : '1');
+    render(); // re-render to show/hide bubbles
+  } else {
+    wTapTimer = setTimeout(() => { wTapCount = 0; }, 600);
+  }
+}
+
+const isAdmin = checkAdmin;
 
 // ── Boot ───────────────────────────────────────────────────
 (function init() {
