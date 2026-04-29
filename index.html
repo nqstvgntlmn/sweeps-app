@@ -553,15 +553,19 @@
   <div class="habits" id="habitsContainer"></div>
 </div>
 
-<!-- Share Modal -->
+<!-- Share Progress Modal -->
 <div class="modal-overlay" id="shareModal">
   <div class="modal">
-    <div class="modal-title">Share SWEEPS</div>
-    <p>Send this link to your friends. They'll be able to set their own start date and goals — your progress stays separate.</p>
-    <div class="url-box" id="shareUrl"></div>
+    <div class="modal-title">Share Progress</div>
+    <canvas id="shareCanvas" style="width:100%;border-radius:10px;margin-bottom:16px;"></canvas>
     <div class="modal-btns">
-      <button class="btn-copy" onclick="copyUrl()">COPY LINK</button>
+      <button class="btn-copy" id="shareImgBtn" onclick="shareImage()">SHARE IMAGE</button>
       <button class="btn-close" onclick="closeShare()">Close</button>
+    </div>
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+      <div style="font-size:11px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">Invite a Friend</div>
+      <div class="url-box" id="shareUrl" style="margin-bottom:8px;font-size:11px;"></div>
+      <button class="btn-close" style="width:100%;text-align:center;" onclick="copyUrl()">Copy Invite Link</button>
     </div>
   </div>
 </div>
@@ -895,10 +899,12 @@ function makeHabitCard(h, checked, isFuture) {
   return card;
 }
 
-// ── Share ──────────────────────────────────────────────────
+// ── Share Progress Image ───────────────────────────────────
 function openShare() {
   document.getElementById('shareUrl').textContent = buildShareUrl();
   document.getElementById('shareModal').classList.add('open');
+  // Draw after modal is visible so canvas dimensions are correct
+  setTimeout(drawShareCard, 50);
 }
 
 function closeShare() {
@@ -907,10 +913,182 @@ function closeShare() {
 
 function copyUrl() {
   navigator.clipboard.writeText(buildShareUrl()).then(() => {
-    const btn = document.querySelector('.btn-copy');
-    btn.textContent = 'COPIED!';
-    setTimeout(() => btn.textContent = 'COPY LINK', 2000);
+    const btn = document.querySelector('#shareModal .btn-close:last-child');
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = orig, 2000);
   });
+}
+
+function drawShareCard() {
+  const canvas = document.getElementById('shareCanvas');
+  const W = 600, H = 400;
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  const todayNum = getTodayDayNum();
+  const penalty = calcPenaltyDays(todayNum);
+  const totalGoal = BASE_DAYS + penalty;
+  const checks = getDayChecks(todayNum);
+  const weekNum = getWeekNum(todayNum);
+  const workouts = getWeekWorkouts(weekNum);
+
+  // Count completed/failed days
+  let completedDays = 0, failedDays = 0;
+  for (let d = 1; d < todayNum; d++) {
+    if (!isDayFailed(d)) completedDays++; else failedDays++;
+  }
+
+  // Background gradient
+  const bg = ctx.createLinearGradient(0, 0, W, H);
+  bg.addColorStop(0, '#0d0d0d'); bg.addColorStop(1, '#141a00');
+  ctx.fillStyle = bg;
+  rrect(ctx, 0, 0, W, H, 16); ctx.fill();
+  ctx.strokeStyle = '#2a2a2a'; ctx.lineWidth = 1;
+  rrect(ctx, 0.5, 0.5, W-1, H-1, 16); ctx.stroke();
+
+  // Title
+  ctx.fillStyle = '#c8f135';
+  ctx.font = '52px "Bebas Neue", serif';
+  ctx.fillText('SWEEPS', 32, 68);
+  ctx.fillStyle = '#555';
+  ctx.font = '500 12px "DM Sans", sans-serif';
+  ctx.fillText(`75 MEDIUM · STARTED ${new Date(parseDate(cfg.startDate)).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}).toUpperCase()}`, 34, 90);
+
+  // Day badge
+  const bx = W-140, by = 24, bw = 116, bh = 64;
+  ctx.fillStyle = '#1a2200'; ctx.strokeStyle = '#4a6600'; ctx.lineWidth = 1;
+  rrect(ctx, bx, by, bw, bh, 12); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#c8f135'; ctx.font = '42px "Bebas Neue", serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(`DAY ${todayNum}`, bx+bw/2, by+44);
+  ctx.fillStyle = '#555'; ctx.font = '500 10px "DM Sans", sans-serif';
+  ctx.fillText(`OF ${totalGoal}`, bx+bw/2, by+58);
+  ctx.textAlign = 'left';
+
+  // Stats row
+  [['COMPLETED', completedDays, '#c8f135'], ['FAILED', failedDays, '#ff6b35'], ['PENALTY', penalty, '#ff6b35']].forEach(([label, val, color], i) => {
+    const sx = 32 + i*120, sy = 112, sw = 108, sh = 64;
+    ctx.fillStyle = '#161616'; ctx.strokeStyle = '#2a2a2a'; ctx.lineWidth = 1;
+    rrect(ctx, sx, sy, sw, sh, 10); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = color; ctx.font = '32px "Bebas Neue", serif';
+    ctx.fillText(val, sx+14, sy+38);
+    ctx.fillStyle = '#555'; ctx.font = '500 9px "DM Sans", sans-serif';
+    ctx.fillText(label, sx+14, sy+54);
+  });
+
+  // Today label
+  ctx.fillStyle = '#555'; ctx.font = '500 10px "DM Sans", sans-serif';
+  ctx.fillText(`TODAY · ${formatDate(todayNum).toUpperCase()}`, 32, 208);
+
+  // Habits
+  const habits = [
+    { letter:'S', name:'Stretch', done:!!checks.stretch },
+    { letter:'W', name:'Water',   done:!!checks.water },
+    { letter:'E', name:'Eat',     done:!!checks.eat },
+    { letter:'E', name:'Exercise',done:workouts>=cfg.goalWorkouts, weekly:true, workouts, goal:cfg.goalWorkouts },
+    { letter:'P', name:'Pages',   done:!!checks.pages },
+    { letter:'S', name:'Steps',   done:!!checks.steps },
+  ];
+
+  habits.forEach((h, i) => {
+    const col = i < 3 ? 0 : 1;
+    const row = i < 3 ? i : i - 3;
+    const hx = 32 + col*284, hy = 220 + row*46, hw = 270, hh = 38;
+
+    ctx.fillStyle = h.done ? '#1a2200' : '#161616';
+    ctx.strokeStyle = h.done ? '#4a6600' : '#2a2a2a'; ctx.lineWidth = 1;
+    rrect(ctx, hx, hy, hw, hh, 8); ctx.fill(); ctx.stroke();
+
+    // Letter box
+    ctx.fillStyle = h.done ? '#1e2800' : '#1a1a1a';
+    ctx.strokeStyle = h.done ? '#c8f135' : '#333'; ctx.lineWidth = 1;
+    rrect(ctx, hx+6, hy+5, 28, 28, 5); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = h.done ? '#c8f135' : '#555';
+    ctx.font = '18px "Bebas Neue", serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(h.letter, hx+20, hy+24);
+    ctx.textAlign = 'left';
+
+    // Name
+    ctx.fillStyle = h.done ? '#9ab82a' : '#ccc';
+    ctx.font = `${h.done?'500':'400'} 13px "DM Sans", sans-serif`;
+    ctx.fillText(h.name, hx+42, hy+21);
+    if (h.done) {
+      const tw = ctx.measureText(h.name).width;
+      ctx.strokeStyle = '#4a6600'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(hx+42, hy+15); ctx.lineTo(hx+42+tw, hy+15); ctx.stroke();
+    }
+
+    // Exercise dots on right side
+    if (h.weekly) {
+      for (let d = 1; d <= h.goal; d++) {
+        const dx = hx + hw - 14 - (h.goal - d) * 14;
+        ctx.fillStyle = d <= h.workouts ? '#c8f135' : '#2a2a2a';
+        ctx.strokeStyle = d <= h.workouts ? '#9ab82a' : '#3a3a3a'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(dx, hy+hh/2, 5, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+      }
+    } else {
+      // Check circle
+      const cx2 = hx+hw-18, cy2 = hy+hh/2;
+      ctx.strokeStyle = h.done ? '#c8f135' : '#333'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(cx2, cy2, 9, 0, Math.PI*2);
+      if (h.done) { ctx.fillStyle = '#c8f135'; ctx.fill(); }
+      ctx.stroke();
+      if (h.done) {
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(cx2-4,cy2); ctx.lineTo(cx2-1,cy2+3); ctx.lineTo(cx2+4,cy2-3); ctx.stroke();
+      }
+    }
+  });
+
+  // Progress dot strip
+  const stripY = 366, dotSize = 6, dotGap = 2, startX = 32;
+  ctx.fillStyle = '#555'; ctx.font = '500 9px "DM Sans", sans-serif';
+  ctx.fillText('PROGRESS', startX, stripY - 6);
+  for (let d = 1; d <= Math.min(totalGoal, 75); d++) {
+    const dx = startX + (d-1)*(dotSize+dotGap), dy = stripY;
+    if (d === todayNum) ctx.fillStyle = '#c8f135';
+    else if (d < todayNum && !isDayFailed(d)) ctx.fillStyle = '#9ab82a';
+    else if (d < todayNum) ctx.fillStyle = '#ff6b35';
+    else ctx.fillStyle = '#2a2a2a';
+    ctx.beginPath(); ctx.arc(dx+dotSize/2, dy+dotSize/2, dotSize/2, 0, Math.PI*2); ctx.fill();
+  }
+
+  // Watermark
+  ctx.fillStyle = '#333'; ctx.font = '400 11px "DM Sans", sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText(location.hostname, W-32, H-16);
+  ctx.textAlign = 'left';
+}
+
+function rrect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
+}
+
+async function shareImage() {
+  const canvas = document.getElementById('shareCanvas');
+  const btn = document.getElementById('shareImgBtn');
+  try {
+    canvas.toBlob(async (blob) => {
+      const file = new File([blob], 'sweeps-progress.png', { type: 'image/png' });
+      if (navigator.share && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'SWEEPS Progress' });
+      } else {
+        // Fallback: download the image
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'sweeps-progress.png';
+        a.click();
+      }
+    }, 'image/png');
+  } catch (e) {
+    console.error('Share failed:', e);
+  }
 }
 
 // ── Confetti ───────────────────────────────────────────────
