@@ -253,6 +253,8 @@
     cursor: pointer;
     display: flex; align-items: center; justify-content: center;
     transition: border-color 0.15s, color 0.15s;
+    touch-action: manipulation; /* prevents double-tap zoom and scroll on mobile */
+    -webkit-tap-highlight-color: transparent;
   }
 
   .day-nav button:hover { border-color: var(--accent); color: var(--accent); }
@@ -2221,15 +2223,20 @@ async function shareImage() {
 // NAV BUTTON HANDLERS
 // ════════════════════════════════════════════════════════
 
-document.getElementById('prevBtn').onclick = () => {
+// ── Day navigation buttons ──────────────────────────────────────────────────
+// Use addEventListener with preventDefault so mobile browsers don't
+// scroll the page or shift focus when the buttons are tapped.
+document.getElementById('prevBtn').addEventListener('click', (e) => {
+  e.preventDefault();
   if (currentDay > 1) { currentDay--; render(); }
-};
+});
 
-document.getElementById('nextBtn').onclick = () => {
-  const todayNum   = getTodayDayNum();
-  const totalGoal  = getTotalGoal(todayNum);
+document.getElementById('nextBtn').addEventListener('click', (e) => {
+  e.preventDefault();
+  const todayNum  = getTodayDayNum();
+  const totalGoal = getTotalGoal(todayNum);
   if (currentDay < Math.min(todayNum, totalGoal)) { currentDay++; render(); }
-};
+});
 
 
 // ════════════════════════════════════════════════════════
