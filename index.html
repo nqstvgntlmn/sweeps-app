@@ -954,7 +954,7 @@ let currentDay = 1;
 /** Whether the celebration overlay has been shown for the current day already */
 let celebrationShownForDay = null;
 
-/** Triple-tap state for unlocking Owala mode */
+/** Triple-tap state for unlocking Owala/admin mode */
 let wTapCount = 0;
 let wTapTimer = null;
 
@@ -977,7 +977,7 @@ function saveStore() {
 
 // ════════════════════════════════════════════════════════
 // ADMIN / OWALA MODE
-// Unlocked by triple-tapping the W letter on the Water card.
+// Unlocked by triple-tapping the SWEEPS logo at the top.
 // Persists in localStorage so it survives app restarts.
 // ════════════════════════════════════════════════════════
 
@@ -1608,8 +1608,7 @@ function render() {
       <div class="owala-bubbles" id="OwalasBubbles"></div>`;
     container.appendChild(owalaCard);
 
-    // Triple-tap the W letter to toggle admin mode off
-    document.getElementById('wLetter').addEventListener('click', handleWTripleTap);
+    // The W letter no longer triggers admin mode — use the SWEEPS logo instead
 
     // Sync the boolean water check with owala completion
     if (!isFuture) setDayCheck(currentDay, 'water', allDone);
@@ -1638,12 +1637,11 @@ function render() {
       bubblesContainer.appendChild(bubble);
     }
   } else {
-    // Non-admin: standard water checkbox with triple-tap to unlock Owala mode
+    // Non-admin: standard water checkbox
     const regularCard = makeHabitCard(
       { id: 'water', letter: 'W', name: 'Water', desc: `${cfg.goalWater} oz / day` },
       !!checks.water, isFuture
     );
-    regularCard.querySelector('.letter').addEventListener('click', handleWTripleTap);
     container.appendChild(regularCard);
   }
 
@@ -2196,6 +2194,10 @@ document.getElementById('nextBtn').addEventListener('click', (e) => {
   // Check for invite link params first (shared link from another user)
   const urlParams = readUrlParams();
   const stored    = loadStore();
+
+  // Attach triple-tap to the SWEEPS logo to toggle admin/Owala mode.
+  // Intentionally invisible — tap logo 3 times quickly to unlock.
+  document.querySelector('.title').addEventListener('click', handleWTripleTap);
 
   // Default the start date picker to today
   const today    = new Date();

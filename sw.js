@@ -1,4 +1,4 @@
-const CACHE = 'sweeps-v10';
+const CACHE = 'sweeps-v11';
 const ASSETS = [
   '/',
   '/index.html',
