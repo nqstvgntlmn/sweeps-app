@@ -237,6 +237,29 @@
     margin-top: 4px;
   }
 
+  .cheat-btn {
+    font-size: 10px;
+    color: #ff6b35;
+    border: 1px solid #5a2000;
+    background: transparent;
+    border-radius: 20px;
+    padding: 3px 10px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-family: 'DM Sans', sans-serif;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: background 0.2s, color 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .cheat-btn.active {
+    background: #ff6b35;
+    color: #000;
+    border-color: #ff6b35;
+  }
+
   .day-strip {
     max-width: 480px;
     margin: 0 auto 24px;
@@ -703,19 +726,64 @@ function setDayCheck(n, id, val) {
   data[`day_${n}`][id] = val;
   saveStore();
 }
+
+// Standard week workout storage (used by non-admin)
 function getWeekWorkouts(w) { return data[`week_${w}`] || 0; }
 function setWeekWorkouts(w, c) { data[`week_${w}`] = c; saveStore(); }
 
+// Admin: workouts stored per-day as a boolean on each day's check object
+// Returns count of workouts logged on days within the same week, UP TO dayNum
+function getWorkoutsUpToDay(dayNum) {
+  const weekNum = getWeekNum(dayNum);
+  const weekStart = (weekNum - 1) * 7 + 1;
+  let count = 0;
+  for (let d = weekStart; d <= dayNum; d++) {
+    if (getDayChecks(d).workout) count++;
+  }
+  return count;
+}
+
+// Total workouts for full week (used in penalty calc for admin)
+function getWeekWorkoutsAdmin(w) {
+  const weekStart = (w - 1) * 7 + 1;
+  const weekEnd = w * 7;
+  let count = 0;
+  for (let d = weekStart; d <= weekEnd; d++) {
+    if (getDayChecks(d).workout) count++;
+  }
+  return count;
+}
+
+// ── Cheat day helpers ──────────────────────────────────────
+// Returns true if a given day is designated as cheat day
+function isCheatDay(n) { return !!getDayChecks(n).cheatDay; }
+
+// Returns true if the week containing day n already has a cheat day used
+function weekHasCheatDay(n) {
+  const weekNum = getWeekNum(n);
+  const weekStart = (weekNum - 1) * 7 + 1;
+  const weekEnd = weekNum * 7;
+  for (let d = weekStart; d <= weekEnd; d++) {
+    if (d !== n && getDayChecks(d).cheatDay) return true;
+  }
+  return false;
+}
+
 // ── Penalty logic ──────────────────────────────────────────
 // A past day fails if ANY daily habit is unchecked
+// Exception: Eat is forgiven if that day is marked as cheat day
 function isDayFailed(n) {
   const checks = getDayChecks(n);
-  return ['stretch','water','eat','pages','steps'].some(id => !checks[id]);
+  return ['stretch','water','eat','pages','steps'].some(id => {
+    if (id === 'eat' && isCheatDay(n)) return false; // cheat day forgives eat
+    return !checks[id];
+  });
 }
 
 // A past week fails if workouts < goal (evaluated at end of each 7-day week)
 function isWeekFailed(w) {
-  return getWeekWorkouts(w) < cfg.goalWorkouts;
+  const total = isAdmin() ? getWeekWorkoutsAdmin(w) : getWeekWorkouts(w);
+  return total < cfg.goalWorkouts;
 }
 
 // Calculate total penalty days accrued so far (only for days/weeks in the past)
@@ -802,7 +870,8 @@ function render() {
   const workouts = getWeekWorkouts(weekNum);
   const isFuture = currentDay > todayNum;
   const isPenalty = isPenaltyDay(currentDay);
-  const exDone = workouts >= cfg.goalWorkouts;
+  // Admin: count workouts up to currentDay; non-admin: use weekly total
+  const exDone = (isAdmin() ? getWorkoutsUpToDay(currentDay) : workouts) >= cfg.goalWorkouts;
 
   // Subtitle
   document.getElementById('mainSubtitle').textContent =
@@ -932,21 +1001,76 @@ function render() {
     container.appendChild(regularCard);
   }
 
-  // E — Eat
-  container.appendChild(makeHabitCard(
-    { id:'eat', letter:'E', name:'Eat', desc:'Calorie deficit' },
-    !!checks.eat, isFuture
-  ));
+  // E — Eat (with cheat day toggle)
+  const cheatThisDay = isCheatDay(currentDay);
+  const cheatUsedElsewhere = weekHasCheatDay(currentDay);
+  const eatDone = !!checks.eat || cheatThisDay;
+
+  const eatCard = document.createElement('div');
+  eatCard.className = 'habit-card' + (eatDone ? ' done' : '');
+  eatCard.innerHTML = `
+    <div class="letter" style="${eatDone ? 'color:var(--accent);border-color:var(--accent)' : ''}">E</div>
+    <div class="habit-info">
+      <div class="habit-name" style="${eatDone ? 'color:var(--accent-dim);' + (cheatThisDay ? '' : 'text-decoration:line-through;text-decoration-color:#4a6600') : ''}">
+        Eat ${cheatThisDay ? '<span style="font-size:11px;color:#ff6b35;font-weight:700;letter-spacing:1px;">· CHEAT DAY 🍕</span>' : ''}
+      </div>
+      <div class="habit-desc" style="${eatDone ? 'color:#3a5200' : ''}">Calorie deficit</div>
+    </div>
+    ${!isFuture ? `<button class="cheat-btn ${cheatThisDay ? 'active' : ''}" id="cheatBtn">
+      ${cheatThisDay ? 'Undo Cheat' : 'Cheat Day'}
+    </button>` : ''}
+    ${!cheatThisDay ? `<div class="check" style="margin-left:8px;">
+      <svg width="12" height="10" viewBox="0 0 12 10" fill="none">
+        <path d="M1 5L4.5 8.5L11 1" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>` : ''}`;
+  container.appendChild(eatCard);
+
+  // Cheat day button logic
+  if (!isFuture) {
+    const cheatBtn = document.getElementById('cheatBtn');
+    if (cheatBtn) {
+      cheatBtn.onclick = (e) => {
+        e.stopPropagation(); // don't trigger card tap
+        if (cheatThisDay) {
+          // Undo cheat day
+          setDayCheck(currentDay, 'cheatDay', false);
+        } else if (!cheatUsedElsewhere) {
+          // Designate today as cheat day
+          setDayCheck(currentDay, 'cheatDay', true);
+          maybeConfetti();
+        } else {
+          alert('You already used your cheat day this week!');
+        }
+        render();
+      };
+    }
+    // Tapping card still toggles eat checkbox (unless cheat day)
+    if (!cheatThisDay) {
+      eatCard.onclick = (e) => {
+        if (e.target.closest('.cheat-btn')) return;
+        const prev = !!getDayChecks(currentDay).eat;
+        setDayCheck(currentDay, 'eat', !prev);
+        if (!prev) maybeConfetti();
+        render();
+      };
+    }
+  }
 
   // E — Exercise (weekly)
+  // Admin: workouts stored per day, dots show count UP TO currentDay
+  // Non-admin: workouts stored as weekly total
+  const workoutsToShow = isAdmin() ? getWorkoutsUpToDay(currentDay) : workouts;
+  const exDoneDisplay = workoutsToShow >= cfg.goalWorkouts;
+
   const exCard = document.createElement('div');
-  exCard.className = 'exercise-row' + (exDone ? ' week-done' : '');
+  exCard.className = 'exercise-row' + (exDoneDisplay ? ' week-done' : '');
   exCard.innerHTML = `
     <div class="exercise-top">
-      <div class="letter" style="${exDone ? 'color:var(--accent);border-color:var(--accent)' : ''}">E</div>
+      <div class="letter" style="${exDoneDisplay ? 'color:var(--accent);border-color:var(--accent)' : ''}">E</div>
       <div class="habit-info">
-        <div class="habit-name" style="${exDone ? 'color:var(--accent-dim)' : ''}">Exercise</div>
-        <div class="habit-desc" style="${exDone ? 'color:#3a5200' : ''}">${cfg.goalWorkouts} workouts this week · Week ${weekNum}</div>
+        <div class="habit-name" style="${exDoneDisplay ? 'color:var(--accent-dim)' : ''}">Exercise</div>
+        <div class="habit-desc" style="${exDoneDisplay ? 'color:#3a5200' : ''}">${cfg.goalWorkouts} workouts this week · Week ${weekNum}</div>
       </div>
     </div>
     <div class="workout-dots" id="workoutDots"></div>`;
@@ -954,14 +1078,21 @@ function render() {
 
   for (let i = 1; i <= cfg.goalWorkouts; i++) {
     const dot = document.createElement('div');
-    dot.className = 'dot' + (i <= workouts ? ' lit' : '');
+    dot.className = 'dot' + (i <= workoutsToShow ? ' lit' : '');
     dot.textContent = i;
     if (!isFuture) {
       dot.onclick = () => {
-        const cur = getWeekWorkouts(weekNum);
-        const next = i <= cur ? i - 1 : i;
-        setWeekWorkouts(weekNum, next);
-        if (next > cur) maybeConfetti();
+        if (isAdmin()) {
+          // Toggle today's workout on/off
+          const todayHasWorkout = !!getDayChecks(currentDay).workout;
+          setDayCheck(currentDay, 'workout', !todayHasWorkout);
+          if (!todayHasWorkout) maybeConfetti();
+        } else {
+          const cur = getWeekWorkouts(weekNum);
+          const next = i <= cur ? i - 1 : i;
+          setWeekWorkouts(weekNum, next);
+          if (next > cur) maybeConfetti();
+        }
         render();
       };
     }
