@@ -1121,27 +1121,28 @@ function setWeekWorkouts(w, c) { data[`week_${w}`] = c; saveStore(); }
 
 /**
  * Admin-only: Count workouts for days from week start up to dayNum.
- * Workouts are stored per-day as day_N.workout = true.
+ * Each day stores workoutCount (number), defaulting to 0.
+ * Shows only workouts logged on or before the viewed day — honest daily tracking.
  */
 function getWorkoutsUpToDay(dayNum) {
   const weekStart = (getWeekNum(dayNum) - 1) * 7 + 1;
   let count = 0;
   for (let d = weekStart; d <= dayNum; d++) {
-    if (getDayChecks(d).workout) count++;
+    count += getDayChecks(d).workoutCount || 0;
   }
   return count;
 }
 
 /**
  * Admin-only: Count total workouts for an entire completed week.
- * Used in penalty calculation.
+ * Used in penalty calculation at week's end.
  */
 function getWeekWorkoutsAdmin(w) {
   const weekStart = (w - 1) * 7 + 1;
   const weekEnd   = w * 7;
   let count = 0;
   for (let d = weekStart; d <= weekEnd; d++) {
-    if (getDayChecks(d).workout) count++;
+    count += getDayChecks(d).workoutCount || 0;
   }
   return count;
 }
@@ -1731,10 +1732,18 @@ function render() {
     if (!isFuture) {
       dot.onclick = () => {
         if (isAdmin()) {
-          // Admin: toggle today's workout on/off
-          const todayHasWorkout = !!getDayChecks(currentDay).workout;
-          setDayCheck(currentDay, 'workout', !todayHasWorkout);
-          if (!todayHasWorkout) triggerCheckAnimation();
+          // Admin: dots show cumulative weekly total up to currentDay.
+          // Tapping dot i means "I want the running total this week to be i".
+          // We store the delta on today's day so prior days are never touched.
+          const priorDaysTotal = getWorkoutsUpToDay(currentDay) - (getDayChecks(currentDay).workoutCount || 0);
+          const curTotal       = getWorkoutsUpToDay(currentDay);
+          const nextTotal      = i <= curTotal ? i - 1 : i;
+          // Today's count = desired weekly total minus what prior days already logged
+          const todayCount = Math.max(0, nextTotal - priorDaysTotal);
+          if (!data[`day_${currentDay}`]) data[`day_${currentDay}`] = {};
+          data[`day_${currentDay}`].workoutCount = todayCount;
+          saveStore();
+          if (nextTotal > curTotal) triggerCheckAnimation();
         } else {
           // Non-admin: tap dot N to set workout count to N (tap again to reduce)
           const cur  = getWeekWorkouts(weekNum);
