@@ -801,23 +801,6 @@
       </div>
     </div>
 
-    <!-- Notification toggle — only visible if browser supports it -->
-    <div class="field" id="notifField" style="display:none;">
-      <label>Daily Reminder</label>
-      <div class="toggle-row">
-        <span>Enable push notifications</span>
-        <label class="toggle">
-          <input type="checkbox" id="notifEnabled" onchange="handleNotifToggle()" />
-          <span class="toggle-slider"></span>
-        </label>
-      </div>
-    </div>
-
-    <!-- Time picker — only visible when notifications are on -->
-    <div class="field" id="notifTimeField" style="display:none;">
-      <label>Reminder Time</label>
-      <input type="time" id="notifTime" value="21:00" />
-    </div>
   </div>
 
   <button class="btn-start" onclick="startChallenge()">START SWEEPS</button>
@@ -940,7 +923,7 @@ const RETRO_HOURS = 24;
 // These are the only mutable globals in the app.
 // ════════════════════════════════════════════════════════
 
-/** User config: startDate, goalWater, goalSteps, goalPages, goalWorkouts, notifEnabled, notifTime */
+/** User config: startDate, goalWater, goalSteps, goalPages, goalWorkouts */
 let cfg = null;
 
 /** All day/week check data, keyed by "day_N" and "week_N" */
@@ -1290,8 +1273,6 @@ function startChallenge() {
     goalSteps:    parseInt(document.getElementById('goalSteps').value)    || 10000,
     goalPages:    parseInt(document.getElementById('goalPages').value)    || 10,
     goalWorkouts: parseInt(document.getElementById('goalWorkouts').value) || 4,
-    notifEnabled: document.getElementById('notifEnabled').checked,
-    notifTime:    document.getElementById('notifTime').value || '21:00',
   };
 
   // Only wipe progress data on a brand-new challenge.
@@ -1301,10 +1282,6 @@ function startChallenge() {
   if (isNewChallenge) data = {};
 
   saveStore();
-
-  // Schedule notifications if enabled, passing the chosen time
-  if (cfg.notifEnabled) scheduleNotification(cfg.notifTime);
-
   showTracker();
 }
 
@@ -1318,11 +1295,6 @@ function showSetup() {
   document.getElementById('setupScreen').style.display  = 'block';
   document.getElementById('trackerScreen').style.display = 'none';
 
-  // Show notification field if the browser supports it
-  if ('Notification' in window || 'serviceWorker' in navigator) {
-    document.getElementById('notifField').style.display = 'block';
-  }
-
   if (cfg) {
     // Pre-fill form with saved settings
     document.getElementById('startDate').value    = cfg.startDate;
@@ -1330,13 +1302,6 @@ function showSetup() {
     document.getElementById('goalSteps').value    = cfg.goalSteps;
     document.getElementById('goalPages').value    = cfg.goalPages;
     document.getElementById('goalWorkouts').value = cfg.goalWorkouts;
-    document.getElementById('notifEnabled').checked = cfg.notifEnabled || false;
-    document.getElementById('notifTime').value    = cfg.notifTime || '21:00';
-
-    // Show time picker if notifications are on
-    if (cfg.notifEnabled) {
-      document.getElementById('notifTimeField').style.display = 'block';
-    }
   }
 }
 
@@ -1348,92 +1313,6 @@ function showTracker() {
   // Start on today's day number, clamped to the total goal
   currentDay = Math.min(getTodayDayNum(), getTotalGoal(getTodayDayNum()));
   render();
-}
-
-
-// ════════════════════════════════════════════════════════
-// NOTIFICATIONS
-// Uses the browser Notification API with a setTimeout-based scheduler.
-// Works when the app is open or running in the background as a PWA.
-// For true background delivery when fully closed, a push server is needed.
-// ════════════════════════════════════════════════════════
-
-/** Called when the notification toggle is changed in settings */
-function handleNotifToggle() {
-  const enabled = document.getElementById('notifEnabled').checked;
-  // Show/hide the time picker based on toggle state
-  document.getElementById('notifTimeField').style.display = enabled ? 'block' : 'none';
-
-  if (enabled) {
-    // Request browser notification permission from the user
-    Notification.requestPermission().then(permission => {
-      if (permission !== 'granted') {
-        // Permission denied — revert the toggle
-        document.getElementById('notifEnabled').checked = false;
-        document.getElementById('notifTimeField').style.display = 'none';
-        alert('Notification permission denied. Enable it in your browser/device settings.');
-      } else {
-        // Permission granted — schedule immediately using current time value
-        const time = document.getElementById('notifTime').value || '21:00';
-        scheduleNotification(time);
-      }
-    });
-  }
-}
-
-/**
- * Schedule a daily reminder notification at the given time (HH:MM).
- * Uses a recursive setTimeout so it reschedules itself each day.
- * @param {string} time - time string like "21:00"
- */
-function scheduleNotification(time) {
-  if (!time) return;
-  if (!('Notification' in window)) return;
-  if (Notification.permission !== 'granted') return;
-
-  // Parse hours and minutes from the time string
-  const [hour, min] = time.split(':').map(Number);
-
-  // Figure out when the next notification should fire
-  const now  = new Date();
-  const next = new Date();
-  next.setHours(hour, min, 0, 0);
-
-  // If that time has already passed today, schedule for tomorrow
-  if (next <= now) next.setDate(next.getDate() + 1);
-
-  const msUntil = next - now;
-
-  // Clear any previously scheduled notification timer
-  if (window._notifTimer) clearTimeout(window._notifTimer);
-
-  window._notifTimer = setTimeout(() => {
-    // Try to use the Service Worker to show the notification
-    // SW notifications work even when the tab is in the background
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-      navigator.serviceWorker.ready.then(reg => {
-        reg.showNotification('SWEEPS Reminder 💪', {
-          body: "Don't forget to log your habits before the day ends!",
-          icon: '/icon-192.png',
-          badge: '/icon-192.png',
-          tag: 'sweeps-daily',        // replaces any existing notification with same tag
-          renotify: true,             // vibrate/sound even if replacing
-          requireInteraction: false,  // auto-dismiss after a few seconds
-        });
-      });
-    } else {
-      // Fallback: regular browser notification (requires tab to be open)
-      new Notification('SWEEPS Reminder 💪', {
-        body: "Don't forget to log your habits before the day ends!",
-        icon: '/icon-192.png',
-      });
-    }
-
-    // Reschedule for the same time tomorrow
-    scheduleNotification(time);
-  }, msUntil);
-
-  console.log(`SWEEPS: notification scheduled for ${next.toLocaleTimeString()}`);
 }
 
 
@@ -2292,11 +2171,6 @@ document.getElementById('nextBtn').addEventListener('click', (e) => {
   const todayStr = today.toISOString().split('T')[0];
   document.getElementById('startDate').value = todayStr;
 
-  // Show notification field if browser supports it
-  if ('Notification' in window) {
-    document.getElementById('notifField').style.display = 'block';
-  }
-
   if (urlParams) {
     // Arriving from an invite link — pre-fill goals from URL
     document.getElementById('goalWater').value    = urlParams.goalWater;
@@ -2316,9 +2190,6 @@ document.getElementById('nextBtn').addEventListener('click', (e) => {
     // Regular returning user — jump straight to tracker
     cfg = stored.cfg; data = stored.data || {};
     showTracker();
-
-    // Re-schedule notifications if they were enabled, passing the saved time
-    if (cfg.notifEnabled) scheduleNotification(cfg.notifTime);
   } else {
     // Brand new user — show setup screen
     showSetup();
