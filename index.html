@@ -169,6 +169,23 @@
 
   .btn-start:hover { opacity: 0.85; }
 
+  /* Back button — shown when returning to settings from tracker */
+  .btn-back {
+    width: 100%;
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: border-color 0.2s, color 0.2s;
+  }
+
+  .btn-back:hover { border-color: var(--accent); color: var(--accent); }
+
   /* ── Main tracker screen ── */
   #trackerScreen { display: none; }
 
@@ -804,6 +821,8 @@
   </div>
 
   <button class="btn-start" onclick="startChallenge()">START SWEEPS</button>
+  <!-- Back button — only shown when returning from Settings, not on first launch -->
+  <button class="btn-back" id="backBtn" style="display:none;" onclick="showTracker()">← Back</button>
 </div>
 
 <!-- ══════════════════════════════════════════════════════
@@ -1294,6 +1313,9 @@ function resetToSetup() {
 function showSetup() {
   document.getElementById('setupScreen').style.display  = 'block';
   document.getElementById('trackerScreen').style.display = 'none';
+
+  // Only show the back button if there's an active challenge to return to
+  document.getElementById('backBtn').style.display = cfg ? 'block' : 'none';
 
   if (cfg) {
     // Pre-fill form with saved settings
