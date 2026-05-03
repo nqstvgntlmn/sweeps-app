@@ -262,9 +262,9 @@
 
   .day-strip {
     max-width: 480px;
-    margin: 0 auto 24px;
+    margin: 0 auto 16px;
     display: flex;
-    gap: 5px;
+    gap: 6px;
     overflow-x: auto;
     padding-bottom: 4px;
     scrollbar-width: none;
@@ -272,16 +272,78 @@
 
   .day-strip::-webkit-scrollbar { display: none; }
 
-  .day-pip { flex-shrink: 0; width: 26px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
-  .day-pip-num { font-size: 9px; color: var(--muted); font-weight: 500; }
-  .day-pip-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); transition: background 0.2s; }
-  .day-pip.active .day-pip-num { color: var(--accent); }
-  .day-pip.active .day-pip-dot { background: var(--accent); }
-  .day-pip.complete .day-pip-dot { background: var(--accent-dim); }
-  .day-pip.failed .day-pip-dot { background: var(--fail-accent); }
-  .day-pip.penalty .day-pip-dot { background: #333; border: 1px solid var(--fail-accent); }
-  .day-pip.penalty .day-pip-num { color: var(--fail-accent); }
-  .day-pip.future { opacity: 0.3; cursor: default; }
+  .week-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .week-group-label {
+    font-size: 8px;
+    color: #444;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .week-dots {
+    display: flex;
+    gap: 3px;
+    padding: 5px 6px;
+    background: #161616;
+    border: 1px solid #2a2a2a;
+    border-radius: 8px;
+  }
+
+  .week-dots.current { border-color: #c8f135; }
+  .week-dots.complete { border-color: #4a6600; }
+  .week-dots.failed { border-color: #5a2000; }
+  .week-dots.future-week { opacity: 0.3; }
+
+  .pip { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .pip-num { font-size: 8px; color: #444; line-height: 1; }
+  .pip-num.active { color: #c8f135; }
+  .pip-dot { width: 7px; height: 7px; border-radius: 50%; background: #2a2a2a; }
+  .pip-dot.complete { background: #9ab82a; }
+  .pip-dot.failed { background: #ff6b35; }
+  .pip-dot.active { background: #c8f135; }
+  .pip-dot.future { background: #1e1e1e; }
+  .pip-dot.penalty-pip { outline: 1px solid #ff6b35; outline-offset: 1px; }
+
+  /* Week banner */
+  .week-fail-banner {
+    max-width: 480px;
+    margin: 0 auto 12px;
+    background: #161616;
+    border: 1px solid #2a2a2a;
+    border-radius: 12px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .wb-left { display: flex; flex-direction: column; gap: 2px; }
+  .wb-week { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: #c8f135; letter-spacing: 2px; line-height: 1; }
+  .wb-dates { font-size: 10px; color: #555; letter-spacing: 0.5px; }
+  .wb-right { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+  .wb-progress { display: flex; gap: 3px; }
+  .wb-day {
+    width: 22px; height: 22px;
+    border-radius: 5px;
+    background: #1e1e1e;
+    border: 1px solid #2a2a2a;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 600; color: #444;
+  }
+  .wb-day.done { background: #1a2200; border-color: #4a6600; color: #9ab82a; }
+  .wb-day.fail { background: #1a0a00; border-color: #5a2000; color: #ff6b35; }
+  .wb-day.today { border-color: #c8f135; color: #c8f135; background: #1a2200; }
+  .wb-day.future { opacity: 0.3; }
+  .wb-workout { font-size: 11px; color: #555; }
+  .wb-workout span { color: #c8f135; font-weight: 600; }
 
   .habits {
     max-width: 480px;
@@ -891,40 +953,118 @@ function render() {
   document.getElementById('prevBtn').disabled = currentDay <= 1;
   document.getElementById('nextBtn').disabled = currentDay >= Math.min(todayNum, totalGoal);
 
-  // Day strip — show all days up to totalGoal
+  // Day strip — grouped by week
   const strip = document.getElementById('dayStrip');
   strip.innerHTML = '';
-  for (let d = 1; d <= totalGoal; d++) {
-    const pip = document.createElement('div');
-    const past = d < todayNum;
-    const isActive = d === currentDay;
-    const isFut = d > todayNum;
-    const isPen = d > BASE_DAYS;
-    let cls = 'day-pip';
-    if (isActive) cls += ' active';
-    else if (isPen && isFut) cls += ' penalty future';
-    else if (isPen) cls += ' penalty';
-    else if (isFut) cls += ' future';
-    else if (past && isDayComplete(d)) cls += ' complete';
-    else if (past) cls += ' failed';
-    pip.className = cls;
-    pip.innerHTML = `<div class="day-pip-num">${d}</div><div class="day-pip-dot"></div>`;
-    if (!isFut || isPen) pip.onclick = () => { if (d <= Math.min(todayNum, totalGoal)) { currentDay = d; render(); } };
-    strip.appendChild(pip);
-    if (isActive) setTimeout(() => pip.scrollIntoView({ inline: 'center', behavior: 'smooth' }), 50);
+
+  // Figure out how many weeks we have
+  const totalWeeks = Math.ceil(totalGoal / 7);
+
+  for (let w = 1; w <= totalWeeks; w++) {
+    const weekStart = (w - 1) * 7 + 1;
+    const weekEnd = Math.min(w * 7, totalGoal);
+    const isCurrentWeek = currentDay >= weekStart && currentDay <= weekEnd;
+    const isWeekPast = weekEnd < todayNum;
+    const isWeekFail = isWeekPast && isWeekFailed(w);
+
+    // Week group container
+    const group = document.createElement('div');
+    group.className = 'week-group';
+
+    // W label
+    const wLabel = document.createElement('div');
+    wLabel.className = 'week-group-label';
+    wLabel.textContent = `W${w}`;
+    group.appendChild(wLabel);
+
+    // Dots container
+    const dotsWrap = document.createElement('div');
+    let dotsCls = 'week-dots';
+    if (isCurrentWeek) dotsCls += ' current';
+    else if (isWeekFail) dotsCls += ' failed';
+    else if (isWeekPast) dotsCls += ' complete';
+    else dotsCls += ' future-week';
+    dotsWrap.className = dotsCls;
+
+    for (let d = weekStart; d <= weekEnd; d++) {
+      const pip = document.createElement('div');
+      pip.className = 'pip';
+
+      const num = document.createElement('div');
+      num.className = 'pip-num' + (d === currentDay ? ' active' : '');
+      num.textContent = d;
+
+      const dot = document.createElement('div');
+      const isPen = d > BASE_DAYS;
+      let dotCls = 'pip-dot';
+      if (d === currentDay) dotCls += ' active';
+      else if (d > todayNum) dotCls += ' future';
+      else if (!isDayFailed(d)) dotCls += ' complete';
+      else dotCls += ' failed';
+      if (isPen) dotCls += ' penalty-pip';
+      dot.className = dotCls;
+
+      pip.appendChild(num);
+      pip.appendChild(dot);
+
+      if (d <= todayNum) {
+        pip.onclick = () => { currentDay = d; render(); };
+        pip.style.cursor = 'pointer';
+      }
+
+      dotsWrap.appendChild(pip);
+    }
+
+    group.appendChild(dotsWrap);
+    strip.appendChild(group);
+
+    // Scroll active week into view
+    if (isCurrentWeek) setTimeout(() => group.scrollIntoView({ inline: 'center', behavior: 'smooth' }), 50);
   }
 
-  // Week fail banner (for the current week if it's over)
+  // Week banner — shows above habits
   const banner = document.getElementById('weekFailBanner');
-  const currentWeekComplete = (currentDay % 7 === 0); // last day of week
-  const prevWeekNum = getWeekNum(currentDay - 1);
-  const showBanner = currentDay > 1 && (currentDay % 7 === 1) && isWeekFailed(prevWeekNum);
-  if (showBanner) {
-    banner.style.display = 'block';
-    banner.textContent = `⚠ Week ${prevWeekNum} ended with only ${getWeekWorkouts(prevWeekNum)}/${cfg.goalWorkouts} workouts — +2 penalty days added.`;
-  } else {
-    banner.style.display = 'none';
+  const weekStart = (weekNum - 1) * 7 + 1;
+  const weekEnd = Math.min(weekNum * 7, totalGoal);
+
+  // Build date range string
+  const weekStartDate = new Date(parseDate(cfg.startDate));
+  weekStartDate.setDate(weekStartDate.getDate() + weekStart - 1);
+  const weekEndDate = new Date(parseDate(cfg.startDate));
+  weekEndDate.setDate(weekEndDate.getDate() + weekEnd - 1);
+  const fmt = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const dateRange = `${fmt(weekStartDate)} – ${fmt(weekEndDate)}`;
+
+  // Build day squares M T W T F S S
+  const dayLetters = ['M','T','W','T','F','S','S'];
+  let daySquares = '';
+  for (let d = weekStart; d <= weekStart + 6; d++) {
+    const letterIdx = (d - weekStart);
+    const letter = dayLetters[letterIdx];
+    let cls = 'wb-day';
+    if (d === currentDay) cls += ' today';
+    else if (d > todayNum) cls += ' future';
+    else if (!isDayFailed(d)) cls += ' done';
+    else cls += ' fail';
+    daySquares += `<div class="${cls}">${letter}</div>`;
   }
+
+  const workoutCount = getWeekWorkouts(weekNum);
+  const bannerBorderColor = weekNum < getWeekNum(todayNum) && isWeekFailed(weekNum)
+    ? 'var(--fail-border)' : weekNum === getWeekNum(todayNum)
+    ? '#c8f135' : '#4a6600';
+
+  banner.style.display = 'block';
+  banner.style.borderColor = bannerBorderColor;
+  banner.innerHTML = `
+    <div class="wb-left">
+      <div class="wb-week">WEEK ${weekNum}</div>
+      <div class="wb-dates">${dateRange}</div>
+    </div>
+    <div class="wb-right">
+      <div class="wb-progress">${daySquares}</div>
+      <div class="wb-workout">💪 <span>${workoutCount}</span>/${cfg.goalWorkouts} workouts</div>
+    </div>`;
 
   // Habits container
   const container = document.getElementById('habitsContainer');
