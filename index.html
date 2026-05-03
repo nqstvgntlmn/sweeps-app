@@ -1302,8 +1302,8 @@ function startChallenge() {
 
   saveStore();
 
-  // Schedule notifications if enabled
-  if (cfg.notifEnabled) scheduleNotification();
+  // Schedule notifications if enabled, passing the chosen time
+  if (cfg.notifEnabled) scheduleNotification(cfg.notifTime);
 
   showTracker();
 }
@@ -1353,62 +1353,87 @@ function showTracker() {
 
 // ════════════════════════════════════════════════════════
 // NOTIFICATIONS
-// Uses the Web Push / Service Worker notification API.
-// Works reliably on Android Chrome; requires user permission.
+// Uses the browser Notification API with a setTimeout-based scheduler.
+// Works when the app is open or running in the background as a PWA.
+// For true background delivery when fully closed, a push server is needed.
 // ════════════════════════════════════════════════════════
 
 /** Called when the notification toggle is changed in settings */
 function handleNotifToggle() {
   const enabled = document.getElementById('notifEnabled').checked;
+  // Show/hide the time picker based on toggle state
   document.getElementById('notifTimeField').style.display = enabled ? 'block' : 'none';
 
   if (enabled) {
-    // Request permission from the user
+    // Request browser notification permission from the user
     Notification.requestPermission().then(permission => {
       if (permission !== 'granted') {
-        // Permission denied — uncheck the toggle
+        // Permission denied — revert the toggle
         document.getElementById('notifEnabled').checked = false;
         document.getElementById('notifTimeField').style.display = 'none';
-        alert('Notification permission denied. You can enable it in your browser settings.');
+        alert('Notification permission denied. Enable it in your browser/device settings.');
+      } else {
+        // Permission granted — schedule immediately using current time value
+        const time = document.getElementById('notifTime').value || '21:00';
+        scheduleNotification(time);
       }
     });
   }
 }
 
 /**
- * Schedule a daily notification at the user's chosen time.
- * Uses the service worker to register a periodic reminder.
- * Falls back to a simple timeout-based approach for same-day.
+ * Schedule a daily reminder notification at the given time (HH:MM).
+ * Uses a recursive setTimeout so it reschedules itself each day.
+ * @param {string} time - time string like "21:00"
  */
-function scheduleNotification() {
-  if (!cfg.notifEnabled) return;
+function scheduleNotification(time) {
+  if (!time) return;
   if (!('Notification' in window)) return;
   if (Notification.permission !== 'granted') return;
 
-  // Calculate ms until next notification time
-  const [hour, min] = cfg.notifTime.split(':').map(Number);
+  // Parse hours and minutes from the time string
+  const [hour, min] = time.split(':').map(Number);
+
+  // Figure out when the next notification should fire
   const now  = new Date();
   const next = new Date();
   next.setHours(hour, min, 0, 0);
 
-  // If the time has already passed today, schedule for tomorrow
+  // If that time has already passed today, schedule for tomorrow
   if (next <= now) next.setDate(next.getDate() + 1);
 
   const msUntil = next - now;
 
-  // Set a timeout for the next notification
-  // (In a full implementation this would use SW background sync)
-  setTimeout(() => {
-    if (Notification.permission === 'granted') {
+  // Clear any previously scheduled notification timer
+  if (window._notifTimer) clearTimeout(window._notifTimer);
+
+  window._notifTimer = setTimeout(() => {
+    // Try to use the Service Worker to show the notification
+    // SW notifications work even when the tab is in the background
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.ready.then(reg => {
+        reg.showNotification('SWEEPS Reminder 💪', {
+          body: "Don't forget to log your habits before the day ends!",
+          icon: '/icon-192.png',
+          badge: '/icon-192.png',
+          tag: 'sweeps-daily',        // replaces any existing notification with same tag
+          renotify: true,             // vibrate/sound even if replacing
+          requireInteraction: false,  // auto-dismiss after a few seconds
+        });
+      });
+    } else {
+      // Fallback: regular browser notification (requires tab to be open)
       new Notification('SWEEPS Reminder 💪', {
         body: "Don't forget to log your habits before the day ends!",
         icon: '/icon-192.png',
-        badge: '/icon-192.png',
       });
-      // Reschedule for tomorrow
-      scheduleNotification();
     }
+
+    // Reschedule for the same time tomorrow
+    scheduleNotification(time);
   }, msUntil);
+
+  console.log(`SWEEPS: notification scheduled for ${next.toLocaleTimeString()}`);
 }
 
 
@@ -1527,11 +1552,21 @@ function render() {
 
     group.appendChild(dotsWrap);
     strip.appendChild(group);
+  }
 
-    // Scroll the current week into the center of the strip
-    if (isCurrentWeek) {
-      setTimeout(() => group.scrollIntoView({ inline: 'center', behavior: 'smooth' }), 50);
-    }
+  // Scroll the active week group into the center of the strip
+  // We manually scroll the strip container instead of using scrollIntoView
+  // because scrollIntoView scrolls the entire PAGE, not just the strip.
+  const activeGroup = strip.querySelector('.week-dots.current');
+  if (activeGroup) {
+    setTimeout(() => {
+      const stripEl    = document.getElementById('dayStrip');
+      const groupLeft  = activeGroup.parentElement.offsetLeft;
+      const groupWidth = activeGroup.parentElement.offsetWidth;
+      const stripWidth = stripEl.offsetWidth;
+      // Center the active week group within the strip
+      stripEl.scrollLeft = groupLeft - (stripWidth / 2) + (groupWidth / 2);
+    }, 50);
   }
 
   // ── Week recap card ──
@@ -2282,8 +2317,8 @@ document.getElementById('nextBtn').addEventListener('click', (e) => {
     cfg = stored.cfg; data = stored.data || {};
     showTracker();
 
-    // Re-schedule notifications if they were enabled
-    if (cfg.notifEnabled) scheduleNotification();
+    // Re-schedule notifications if they were enabled, passing the saved time
+    if (cfg.notifEnabled) scheduleNotification(cfg.notifTime);
   } else {
     // Brand new user — show setup screen
     showSetup();
