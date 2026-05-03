@@ -2297,6 +2297,14 @@ document.getElementById('nextBtn').addEventListener('click', (e) => {
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/sw.js').catch(() => {});
+
+      // When the SW activates a new version, it sends SW_UPDATED.
+      // We reload immediately so users always see the latest build.
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'SW_UPDATED') {
+          window.location.reload();
+        }
+      });
     });
   }
 </script>
