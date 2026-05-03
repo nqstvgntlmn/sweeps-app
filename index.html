@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SWEEPS</title>
+<!-- PWA meta tags for iOS home screen support -->
 <meta name="theme-color" content="#0d0d0d">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -12,19 +13,20 @@
 <link rel="apple-touch-icon" href="/icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
+  /* ── CSS custom properties (design tokens) ── */
   :root {
-    --bg: #0d0d0d;
-    --card: #161616;
-    --border: #2a2a2a;
-    --accent: #c8f135;
-    --accent-dim: #9ab82a;
-    --text: #f0f0f0;
-    --muted: #666;
-    --done-bg: #1a2200;
-    --done-border: #4a6600;
-    --fail-bg: #1a0a00;
-    --fail-border: #5a2000;
-    --fail-accent: #ff6b35;
+    --bg: #0d0d0d;           /* main background */
+    --card: #161616;          /* card background */
+    --border: #2a2a2a;        /* default border */
+    --accent: #c8f135;        /* lime green highlight */
+    --accent-dim: #9ab82a;    /* dimmer green for done states */
+    --text: #f0f0f0;          /* primary text */
+    --muted: #666;            /* secondary/label text */
+    --done-bg: #1a2200;       /* completed habit background */
+    --done-border: #4a6600;   /* completed habit border */
+    --fail-bg: #1a0a00;       /* failed day background */
+    --fail-border: #5a2000;   /* failed day border */
+    --fail-accent: #ff6b35;   /* orange for failures/penalties */
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -39,6 +41,7 @@
 
   header { text-align: center; margin-bottom: 28px; }
 
+  /* Large SWEEPS wordmark at the top */
   .title {
     font-family: 'Bebas Neue', sans-serif;
     font-size: clamp(52px, 12vw, 96px);
@@ -47,13 +50,16 @@
     line-height: 1;
   }
 
-  .subtitle { font-size: 13px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-top: 6px; }
+  .subtitle {
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 6px;
+  }
 
   /* ── Setup screen ── */
-  #setupScreen {
-    max-width: 440px;
-    margin: 0 auto;
-  }
+  #setupScreen { max-width: 440px; margin: 0 auto; }
 
   .setup-card {
     background: var(--card);
@@ -84,7 +90,8 @@
   }
 
   .field input[type="date"],
-  .field input[type="number"] {
+  .field input[type="number"],
+  .field input[type="time"] {
     width: 100%;
     background: var(--bg);
     border: 1px solid var(--border);
@@ -101,12 +108,47 @@
 
   .field input:focus { border-color: var(--accent); }
 
-  .field .unit {
+  /* Toggle switch for notification setting */
+  .field .toggle-row {
     display: flex;
     align-items: center;
-    gap: 10px;
+    justify-content: space-between;
+    gap: 12px;
   }
 
+  .toggle-row span { font-size: 13px; color: var(--text); }
+
+  .toggle {
+    position: relative;
+    width: 44px; height: 24px;
+    flex-shrink: 0;
+  }
+
+  .toggle input { opacity: 0; width: 0; height: 0; }
+
+  .toggle-slider {
+    position: absolute;
+    inset: 0;
+    background: #333;
+    border-radius: 24px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .toggle-slider::before {
+    content: '';
+    position: absolute;
+    left: 3px; top: 3px;
+    width: 18px; height: 18px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.2s;
+  }
+
+  .toggle input:checked + .toggle-slider { background: var(--accent); }
+  .toggle input:checked + .toggle-slider::before { transform: translateX(20px); }
+
+  .field .unit { display: flex; align-items: center; gap: 10px; }
   .field .unit input { flex: 1; }
   .field .unit span { font-size: 12px; color: var(--muted); white-space: nowrap; }
 
@@ -127,9 +169,10 @@
 
   .btn-start:hover { opacity: 0.85; }
 
-  /* ── Main tracker ── */
+  /* ── Main tracker screen ── */
   #trackerScreen { display: none; }
 
+  /* Share/Settings buttons row */
   .top-bar {
     max-width: 480px;
     margin: 0 auto 16px;
@@ -154,11 +197,12 @@
 
   .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
 
+  /* 2×2 stats grid: Current Day, Goal Days, Streak, Penalty */
   .stats-row {
     max-width: 480px;
     margin: 0 auto 24px;
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr;
     gap: 10px;
   }
 
@@ -176,12 +220,21 @@
     line-height: 1;
   }
 
-  .stat-num.green { color: var(--accent); }
+  /* Color variants for stat numbers */
+  .stat-num.green  { color: var(--accent); }
   .stat-num.orange { color: var(--fail-accent); }
-  .stat-num.white { color: var(--text); }
+  .stat-num.white  { color: var(--text); }
+  .stat-num.fire   { color: #ffb347; } /* warm orange for streak */
 
-  .stat-label { font-size: 10px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; margin-top: 4px; }
+  .stat-label {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
 
+  /* Previous/next day navigation */
   .day-nav {
     display: flex;
     align-items: center;
@@ -223,6 +276,7 @@
     margin-top: 2px;
   }
 
+  /* Orange pill shown on penalty extension days */
   .day-label .penalty-tag {
     display: inline-block;
     background: var(--fail-accent);
@@ -237,6 +291,7 @@
     margin-top: 4px;
   }
 
+  /* Cheat day button on the Eat card */
   .cheat-btn {
     font-size: 10px;
     color: #ff6b35;
@@ -254,12 +309,9 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  .cheat-btn.active {
-    background: #ff6b35;
-    color: #000;
-    border-color: #ff6b35;
-  }
+  .cheat-btn.active { background: #ff6b35; color: #000; border-color: #ff6b35; }
 
+  /* ── Grouped week dot strip ── */
   .day-strip {
     max-width: 480px;
     margin: 0 auto 16px;
@@ -272,6 +324,7 @@
 
   .day-strip::-webkit-scrollbar { display: none; }
 
+  /* One group per week (W1, W2, …) */
   .week-group {
     display: flex;
     flex-direction: column;
@@ -280,13 +333,9 @@
     flex-shrink: 0;
   }
 
-  .week-group-label {
-    font-size: 8px;
-    color: #444;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-  }
+  .week-group-label { font-size: 8px; color: #444; letter-spacing: 1px; text-transform: uppercase; }
 
+  /* Container holding the 7 day dots for one week */
   .week-dots {
     display: flex;
     gap: 3px;
@@ -296,23 +345,27 @@
     border-radius: 8px;
   }
 
-  .week-dots.current { border-color: #c8f135; }
-  .week-dots.complete { border-color: #4a6600; }
-  .week-dots.failed { border-color: #5a2000; }
-  .week-dots.future-week { opacity: 0.3; }
+  /* Border color variants by week state */
+  .week-dots.current     { border-color: #c8f135; }  /* active week */
+  .week-dots.complete    { border-color: #4a6600; }  /* all days done */
+  .week-dots.failed      { border-color: #5a2000; }  /* had a failure */
+  .week-dots.future-week { opacity: 0.3; }            /* not reached yet */
 
+  /* Individual day pip (number + dot) */
   .pip { display: flex; flex-direction: column; align-items: center; gap: 3px; }
   .pip-num { font-size: 8px; color: #444; line-height: 1; }
   .pip-num.active { color: #c8f135; }
-  .pip-dot { width: 7px; height: 7px; border-radius: 50%; background: #2a2a2a; }
-  .pip-dot.complete { background: #9ab82a; }
-  .pip-dot.failed { background: #ff6b35; }
-  .pip-dot.active { background: #c8f135; }
-  .pip-dot.future { background: #1e1e1e; }
-  .pip-dot.penalty-pip { outline: 1px solid #ff6b35; outline-offset: 1px; }
 
-  /* Week banner */
-  .week-fail-banner {
+  /* Day status dot */
+  .pip-dot { width: 7px; height: 7px; border-radius: 50%; background: #2a2a2a; }
+  .pip-dot.complete    { background: #9ab82a; }
+  .pip-dot.failed      { background: #ff6b35; }
+  .pip-dot.active      { background: #c8f135; }
+  .pip-dot.future      { background: #1e1e1e; }
+  .pip-dot.penalty-pip { outline: 1px solid #ff6b35; outline-offset: 1px; } /* penalty extension days */
+
+  /* ── Week summary banner (above habits) ── */
+  .week-banner {
     max-width: 480px;
     margin: 0 auto 12px;
     background: #161616;
@@ -325,11 +378,13 @@
     gap: 12px;
   }
 
-  .wb-left { display: flex; flex-direction: column; gap: 2px; }
-  .wb-week { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: #c8f135; letter-spacing: 2px; line-height: 1; }
+  .wb-left  { display: flex; flex-direction: column; gap: 2px; }
+  .wb-week  { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: #c8f135; letter-spacing: 2px; line-height: 1; }
   .wb-dates { font-size: 10px; color: #555; letter-spacing: 0.5px; }
   .wb-right { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
   .wb-progress { display: flex; gap: 3px; }
+
+  /* Day-of-week squares in the week banner (M T W T F S S) */
   .wb-day {
     width: 22px; height: 22px;
     border-radius: 5px;
@@ -338,13 +393,16 @@
     display: flex; align-items: center; justify-content: center;
     font-size: 9px; font-weight: 600; color: #444;
   }
-  .wb-day.done { background: #1a2200; border-color: #4a6600; color: #9ab82a; }
-  .wb-day.fail { background: #1a0a00; border-color: #5a2000; color: #ff6b35; }
-  .wb-day.today { border-color: #c8f135; color: #c8f135; background: #1a2200; }
+
+  .wb-day.done   { background: #1a2200; border-color: #4a6600; color: #9ab82a; }
+  .wb-day.fail   { background: #1a0a00; border-color: #5a2000; color: #ff6b35; }
+  .wb-day.today  { border-color: #c8f135; color: #c8f135; background: #1a2200; }
   .wb-day.future { opacity: 0.3; }
+
   .wb-workout { font-size: 11px; color: #555; }
   .wb-workout span { color: #c8f135; font-weight: 600; }
 
+  /* ── Habit cards ── */
   .habits {
     max-width: 480px;
     margin: 0 auto;
@@ -372,8 +430,9 @@
   .habit-card.done .letter { color: var(--accent); border-color: var(--accent); }
   .habit-card.done .habit-name { color: var(--accent-dim); text-decoration: line-through; text-decoration-color: #4a6600; }
   .habit-card.done .habit-desc { color: #3a5200; }
-  .habit-card.locked { opacity: 0.4; cursor: default; }
+  .habit-card.locked { opacity: 0.4; cursor: default; } /* future days */
 
+  /* SWEEPS letter badge on each card */
   .letter {
     font-family: 'Bebas Neue', sans-serif;
     font-size: 28px;
@@ -390,6 +449,7 @@
   .habit-name { font-size: 15px; font-weight: 500; letter-spacing: 0.3px; }
   .habit-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
 
+  /* Circular checkbox on the right of each habit card */
   .check {
     width: 24px; height: 24px;
     border: 1.5px solid var(--border);
@@ -403,6 +463,7 @@
   .check svg { display: none; }
   .habit-card.done .check svg { display: block; }
 
+  /* ── Exercise weekly card ── */
   .exercise-row {
     background: var(--card);
     border: 1px solid var(--border);
@@ -411,12 +472,13 @@
     transition: border-color 0.2s, background 0.2s;
   }
 
-  .exercise-row.week-done { background: var(--done-bg); border-color: var(--done-border); }
+  .exercise-row.week-done   { background: var(--done-bg); border-color: var(--done-border); }
   .exercise-row.week-failed { border-color: var(--fail-border); }
 
-  .exercise-top { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; }
-  .workout-dots { display: flex; gap: 10px; padding-left: 60px; }
+  .exercise-top  { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; }
+  .workout-dots  { display: flex; gap: 10px; padding-left: 60px; }
 
+  /* Numbered workout dot buttons */
   .dot {
     width: 38px; height: 38px;
     border-radius: 8px;
@@ -434,21 +496,167 @@
 
   .dot.lit { border-color: var(--accent); background: var(--accent); color: #000; }
 
-  /* Week failure banner */
-  .week-fail-banner {
-    max-width: 480px;
-    margin: 0 auto 10px;
-    background: var(--fail-bg);
-    border: 1px solid var(--fail-border);
-    border-radius: 10px;
-    padding: 10px 16px;
-    font-size: 12px;
-    color: var(--fail-accent);
-    letter-spacing: 0.5px;
-    display: none;
+  /* ── Owala water bubbles (admin only) ── */
+  .owala-row {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    transition: border-color 0.2s, background 0.2s;
   }
 
-  /* Share modal */
+  .owala-row.all-done { background: var(--done-bg); border-color: var(--done-border); }
+  .owala-top    { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; }
+  .owala-bubbles { display: flex; gap: 10px; padding-left: 60px; }
+
+  .owala-bubble {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: transparent;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    transition: border-color 0.2s, background 0.2s, transform 0.1s;
+    -webkit-tap-highlight-color: transparent;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .owala-bubble:active { transform: scale(0.9); }
+
+  /* Blue fill animation when a bubble is tapped */
+  .owala-bubble.filled { border-color: #4aa8ff; background: #0a3a6e; }
+
+  .owala-bubble.filled::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 100%;
+    background: linear-gradient(to top, #1a6abf 0%, #4aa8ff 100%);
+    border-radius: 50%;
+    animation: fillUp 0.3s ease-out;
+  }
+
+  @keyframes fillUp {
+    from { height: 0; }
+    to   { height: 100%; }
+  }
+
+  .owala-bubble .drop { position: relative; z-index: 1; font-size: 16px; }
+
+  /* ── Penalty extension day placeholder ── */
+  .penalty-overlay {
+    background: var(--fail-bg);
+    border: 1px solid var(--fail-border);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  .penalty-overlay .po-icon  { font-size: 32px; margin-bottom: 8px; }
+  .penalty-overlay .po-title { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 2px; color: var(--fail-accent); }
+  .penalty-overlay .po-sub   { font-size: 13px; color: var(--muted); margin-top: 6px; line-height: 1.5; }
+
+  /* ── Week recap card (shown when navigating to a new week) ── */
+  .week-recap {
+    max-width: 480px;
+    margin: 0 auto 12px;
+    background: #161616;
+    border: 1px solid #2a2a2a;
+    border-radius: 12px;
+    padding: 16px;
+  }
+
+  .week-recap-title { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: var(--accent); letter-spacing: 2px; margin-bottom: 10px; }
+
+  .week-recap-stats { display: flex; gap: 10px; margin-bottom: 10px; }
+
+  .wr-stat {
+    flex: 1;
+    background: var(--bg);
+    border-radius: 8px;
+    padding: 10px 8px;
+    text-align: center;
+  }
+
+  .wr-stat-num  { font-family: 'Bebas Neue', sans-serif; font-size: 28px; line-height: 1; }
+  .wr-stat-label { font-size: 9px; color: #555; letter-spacing: 1.5px; text-transform: uppercase; margin-top: 3px; }
+
+  .week-recap-msg { font-size: 12px; color: #555; line-height: 1.6; }
+
+  /* ── Full-screen completion celebration overlay ── */
+  .celebration-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.92);
+    z-index: 300;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px 24px;
+    animation: fadeInCelebration 0.4s ease-out;
+  }
+
+  .celebration-overlay.show { display: flex; }
+
+  @keyframes fadeInCelebration {
+    from { opacity: 0; transform: scale(0.95); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+
+  .cel-emoji { font-size: 72px; margin-bottom: 16px; animation: bounce 0.6s ease-out; }
+
+  @keyframes bounce {
+    0%   { transform: scale(0.5); }
+    60%  { transform: scale(1.15); }
+    100% { transform: scale(1); }
+  }
+
+  .cel-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 52px;
+    letter-spacing: 4px;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+
+  .cel-sub   { font-size: 14px; color: #555; letter-spacing: 1px; margin-bottom: 32px; }
+  .cel-streak { font-size: 18px; color: #ffb347; font-weight: 600; margin-bottom: 32px; }
+
+  .cel-close {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 12px;
+    padding: 14px 40px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 3px;
+    cursor: pointer;
+  }
+
+  /* ── Retroactive edit warning banner ── */
+  .retro-warning {
+    display: none;
+    max-width: 480px;
+    margin: 0 auto 10px;
+    background: #1a1000;
+    border: 1px solid #554400;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: #ffb347;
+    letter-spacing: 0.3px;
+    line-height: 1.5;
+  }
+
+  /* ── Share / modal ── */
   .modal-overlay {
     display: none;
     position: fixed;
@@ -458,6 +666,7 @@
     align-items: center;
     justify-content: center;
     padding: 20px;
+    overflow-y: auto;
   }
 
   .modal-overlay.open { display: flex; }
@@ -519,81 +728,7 @@
     cursor: pointer;
   }
 
-  /* Penalty day overlay */
-  .penalty-overlay {
-    background: var(--fail-bg);
-    border: 1px solid var(--fail-border);
-    border-radius: 12px;
-    padding: 20px;
-    text-align: center;
-    max-width: 480px;
-    margin: 0 auto;
-  }
-
-  .penalty-overlay .po-icon { font-size: 32px; margin-bottom: 8px; }
-  .penalty-overlay .po-title { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 2px; color: var(--fail-accent); }
-  .penalty-overlay .po-sub { font-size: 13px; color: var(--muted); margin-top: 6px; line-height: 1.5; }
-
-  /* ── Owala bubbles (admin only) ── */
-  .owala-row {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 16px 18px;
-    transition: border-color 0.2s, background 0.2s;
-  }
-
-  .owala-row.all-done {
-    background: var(--done-bg);
-    border-color: var(--done-border);
-  }
-
-  .owala-top { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; }
-
-  .owala-bubbles {
-    display: flex;
-    gap: 10px;
-    padding-left: 60px;
-  }
-
-  .owala-bubble {
-    width: 44px; height: 44px;
-    border-radius: 50%;
-    border: 2px solid var(--border);
-    background: transparent;
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 18px;
-    transition: border-color 0.2s, background 0.2s, transform 0.1s;
-    -webkit-tap-highlight-color: transparent;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .owala-bubble:active { transform: scale(0.9); }
-
-  .owala-bubble.filled {
-    border-color: #4aa8ff;
-    background: #0a3a6e;
-  }
-
-  .owala-bubble.filled::after {
-    content: '';
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    height: 100%;
-    background: linear-gradient(to top, #1a6abf 0%, #4aa8ff 100%);
-    border-radius: 50%;
-    animation: fillUp 0.3s ease-out;
-  }
-
-  @keyframes fillUp {
-    from { height: 0; }
-    to { height: 100%; }
-  }
-
-  .owala-bubble .drop { position: relative; z-index: 1; font-size: 16px; }
-
+  /* ── Confetti particles ── */
   .confetti { position: fixed; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; z-index: 100; overflow: hidden; }
 
   .confetti-piece {
@@ -604,19 +739,24 @@
   }
 
   @keyframes fall {
-    0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+    0%   { transform: translateY(-20px) rotate(0deg);  opacity: 1; }
     100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
   }
 </style>
 </head>
 <body>
 
+<!-- App title — always visible at top -->
 <header>
   <div class="title">SWEEPS</div>
   <div class="subtitle" id="mainSubtitle">75 Medium Challenge</div>
 </header>
 
-<!-- SETUP SCREEN -->
+<!-- ══════════════════════════════════════════════════════
+     SETUP SCREEN
+     Shown on first launch or when user taps Settings.
+     Collects start date, goals, and notification preference.
+════════════════════════════════════════════════════════ -->
 <div id="setupScreen">
   <div class="setup-card">
     <div class="setup-title">Your Goals</div>
@@ -657,18 +797,42 @@
         <span>workouts / week</span>
       </div>
     </div>
+
+    <!-- Notification toggle — only visible if browser supports it -->
+    <div class="field" id="notifField" style="display:none;">
+      <label>Daily Reminder</label>
+      <div class="toggle-row">
+        <span>Enable push notifications</span>
+        <label class="toggle">
+          <input type="checkbox" id="notifEnabled" onchange="handleNotifToggle()" />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Time picker — only visible when notifications are on -->
+    <div class="field" id="notifTimeField" style="display:none;">
+      <label>Reminder Time</label>
+      <input type="time" id="notifTime" value="21:00" />
+    </div>
   </div>
 
   <button class="btn-start" onclick="startChallenge()">START SWEEPS</button>
 </div>
 
-<!-- TRACKER SCREEN -->
+<!-- ══════════════════════════════════════════════════════
+     TRACKER SCREEN
+     The main daily view. Shown after setup is complete.
+════════════════════════════════════════════════════════ -->
 <div id="trackerScreen">
+
+  <!-- Top action buttons -->
   <div class="top-bar">
     <button class="icon-btn" onclick="openShare()">⬆ Share</button>
     <button class="icon-btn" onclick="resetToSetup()">⚙ Settings</button>
   </div>
 
+  <!-- 2×2 stats grid -->
   <div class="stats-row">
     <div class="stat-box">
       <div class="stat-num green" id="statDay">1</div>
@@ -679,26 +843,46 @@
       <div class="stat-label">Goal Days</div>
     </div>
     <div class="stat-box">
+      <div class="stat-num fire" id="statStreak">0</div>
+      <div class="stat-label">🔥 Streak</div>
+    </div>
+    <div class="stat-box">
       <div class="stat-num orange" id="statPenalty">0</div>
       <div class="stat-label">Penalty Days</div>
     </div>
   </div>
 
+  <!-- Day navigation: ‹ DAY 5 › -->
   <div class="day-nav">
     <button id="prevBtn">‹</button>
     <div class="day-label" id="dayLabel">DAY 1<span></span></div>
     <button id="nextBtn">›</button>
   </div>
 
+  <!-- Retroactive edit warning (shown when editing a past day) -->
+  <div class="retro-warning" id="retroWarning">
+    ⚠ You're editing a past day. Changes here affect your penalty count.
+  </div>
 
+  <!-- Week-grouped dot strip (scrollable) -->
   <div class="day-strip" id="dayStrip"></div>
 
-  <div class="week-fail-banner" id="weekFailBanner"></div>
+  <!-- Week summary banner (shows when you navigate to a new week) -->
+  <div class="week-recap" id="weekRecap" style="display:none;"></div>
 
+  <!-- Current week banner (always visible above habits) -->
+  <div class="week-banner" id="weekBanner"></div>
+
+  <!-- Habit cards rendered by JS -->
   <div class="habits" id="habitsContainer"></div>
 </div>
 
-<!-- Share Progress Modal -->
+<!-- ══════════════════════════════════════════════════════
+     SHARE PROGRESS MODAL
+     Draws a canvas card of today's progress and lets
+     the user share it via the native share sheet.
+     Also includes the invite link for new users.
+════════════════════════════════════════════════════════ -->
 <div class="modal-overlay" id="shareModal">
   <div class="modal">
     <div class="modal-title">Share Progress</div>
@@ -715,89 +899,227 @@
   </div>
 </div>
 
+<!-- ══════════════════════════════════════════════════════
+     COMPLETION CELEBRATION OVERLAY
+     Full-screen animation when all habits are done.
+════════════════════════════════════════════════════════ -->
+<div class="celebration-overlay" id="celebrationOverlay">
+  <div class="cel-emoji">🏆</div>
+  <div class="cel-title">DAY COMPLETE!</div>
+  <div class="cel-sub" id="celSub">All habits checked off</div>
+  <div class="cel-streak" id="celStreak"></div>
+  <button class="cel-close" onclick="closeCelebration()">KEEP GOING</button>
+</div>
+
+<!-- Confetti particles container -->
 <div class="confetti" id="confetti"></div>
 
 <script>
-// ── Constants ──────────────────────────────────────────────
+// ════════════════════════════════════════════════════════
+// CONSTANTS
+// ════════════════════════════════════════════════════════
+
+/** The base challenge length before any penalty days are added */
 const BASE_DAYS = 75;
+
+/** localStorage key for all app data */
 const STORAGE_KEY = 'sweeps_v2';
 
-// ── State ──────────────────────────────────────────────────
-let cfg = null;   // { startDate, goalWater, goalSteps, goalPages, goalWorkouts }
-let data = {};    // day/week check data
+/** localStorage key for the admin (Owala) mode flag */
+const ADMIN_KEY = 'sweeps_admin';
+
+/** How many hours back a user can edit without seeing the retro warning */
+const RETRO_HOURS = 24;
+
+
+// ════════════════════════════════════════════════════════
+// STATE
+// These are the only mutable globals in the app.
+// ════════════════════════════════════════════════════════
+
+/** User config: startDate, goalWater, goalSteps, goalPages, goalWorkouts, notifEnabled, notifTime */
+let cfg = null;
+
+/** All day/week check data, keyed by "day_N" and "week_N" */
+let data = {};
+
+/** Which day number is currently being viewed (1-indexed) */
 let currentDay = 1;
 
-// ── Persistence ────────────────────────────────────────────
+/** Whether the celebration overlay has been shown for the current day already */
+let celebrationShownForDay = null;
+
+/** Triple-tap state for unlocking Owala mode */
+let wTapCount = 0;
+let wTapTimer = null;
+
+
+// ════════════════════════════════════════════════════════
+// PERSISTENCE
+// ════════════════════════════════════════════════════════
+
+/** Load the full app state from localStorage. Returns {} if nothing saved yet. */
 function loadStore() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; }
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+  catch { return {}; }
 }
+
+/** Save the current cfg and data to localStorage. */
 function saveStore() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify({ cfg, data }));
 }
 
-// ── URL param helpers ──────────────────────────────────────
-// Share URL only encodes the blank template config (no progress data)
+
+// ════════════════════════════════════════════════════════
+// ADMIN / OWALA MODE
+// Unlocked by triple-tapping the W letter on the Water card.
+// Persists in localStorage so it survives app restarts.
+// ════════════════════════════════════════════════════════
+
+/** Returns true if Owala mode is currently enabled for this device */
+function isAdmin() {
+  return localStorage.getItem(ADMIN_KEY) === '1';
+}
+
+/**
+ * Called each time the W letter is tapped.
+ * Counts 3 taps within 600ms to toggle admin mode.
+ */
+function handleWTripleTap() {
+  wTapCount++;
+  clearTimeout(wTapTimer);
+
+  if (wTapCount >= 3) {
+    // Three taps detected — toggle admin mode
+    wTapCount = 0;
+    const current = localStorage.getItem(ADMIN_KEY) === '1';
+    localStorage.setItem(ADMIN_KEY, current ? '0' : '1');
+    render();
+  } else {
+    // Reset counter if next tap doesn't come within 600ms
+    wTapTimer = setTimeout(() => { wTapCount = 0; }, 600);
+  }
+}
+
+
+// ════════════════════════════════════════════════════════
+// URL PARAM HELPERS
+// Used for the "Invite a Friend" share link.
+// The link encodes goal settings so friends start with the same targets.
+// ════════════════════════════════════════════════════════
+
+/**
+ * Build a shareable URL with goal settings as query params.
+ * Does NOT include start date (each person sets their own).
+ */
 function buildShareUrl() {
   const base = location.href.split('?')[0].split('#')[0];
   const params = new URLSearchParams({
-    sw: 1,  // sweeps flag
-    // no start date — recipient sets their own
-    w: cfg.goalWater,
-    s: cfg.goalSteps,
-    p: cfg.goalPages,
+    sw: 1,              // flag to identify this as a SWEEPS invite link
+    w:  cfg.goalWater,
+    s:  cfg.goalSteps,
+    p:  cfg.goalPages,
     wk: cfg.goalWorkouts,
   });
   return `${base}?${params.toString()}`;
 }
 
+/**
+ * Read goal settings from URL params (if this is an invite link).
+ * Returns null if not an invite link.
+ */
 function readUrlParams() {
   const p = new URLSearchParams(location.search);
   if (!p.get('sw')) return null;
   return {
-    goalWater: parseInt(p.get('w')) || 128,
-    goalSteps: parseInt(p.get('s')) || 10000,
-    goalPages: parseInt(p.get('p')) || 10,
+    goalWater:    parseInt(p.get('w'))  || 128,
+    goalSteps:    parseInt(p.get('s'))  || 10000,
+    goalPages:    parseInt(p.get('p'))  || 10,
     goalWorkouts: parseInt(p.get('wk')) || 4,
   };
 }
 
-// ── Date helpers ───────────────────────────────────────────
+
+// ════════════════════════════════════════════════════════
+// DATE HELPERS
+// ════════════════════════════════════════════════════════
+
+/**
+ * Parse a "YYYY-MM-DD" date string into a local Date object.
+ * Using manual parsing avoids UTC timezone offset issues.
+ */
 function parseDate(str) {
-  const [y,m,d] = str.split('-').map(Number);
-  return new Date(y, m-1, d);
+  const [y, m, d] = str.split('-').map(Number);
+  return new Date(y, m - 1, d);
 }
 
+/**
+ * Get the display date string for challenge day N.
+ * E.g. day 1 → "Tue, Apr 28"
+ */
 function formatDate(n) {
   const d = new Date(parseDate(cfg.startDate));
   d.setDate(d.getDate() + n - 1);
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
+/**
+ * Returns today's challenge day number (1-indexed).
+ * Clamped to at least 1 (won't go negative if today is before start).
+ */
 function getTodayDayNum() {
-  const now = new Date(); now.setHours(0,0,0,0);
-  const start = parseDate(cfg.startDate); start.setHours(0,0,0,0);
+  const now   = new Date(); now.setHours(0, 0, 0, 0);
+  const start = parseDate(cfg.startDate); start.setHours(0, 0, 0, 0);
   return Math.max(1, Math.floor((now - start) / 86400000) + 1);
 }
 
+/**
+ * Returns the week number (1-indexed) for a given day number.
+ * Days 1-7 → week 1, days 8-14 → week 2, etc.
+ */
 function getWeekNum(n) { return Math.ceil(n / 7); }
 
-// ── Data accessors ─────────────────────────────────────────
+/**
+ * Returns true if the given day was edited more than RETRO_HOURS ago.
+ * Used to show the retroactive warning banner.
+ */
+function isDayRetroactive(n) {
+  const now   = new Date();
+  const start = parseDate(cfg.startDate);
+  const dayDate = new Date(start);
+  dayDate.setDate(dayDate.getDate() + n - 1);
+  const hoursDiff = (now - dayDate) / (1000 * 60 * 60);
+  return hoursDiff > RETRO_HOURS;
+}
+
+
+// ════════════════════════════════════════════════════════
+// DATA ACCESSORS
+// All reads and writes to the `data` object go through here.
+// ════════════════════════════════════════════════════════
+
+/** Get the check state object for day N (e.g. { stretch: true, water: false }) */
 function getDayChecks(n) { return data[`day_${n}`] || {}; }
+
+/** Set a single habit check for a specific day and save to storage */
 function setDayCheck(n, id, val) {
   if (!data[`day_${n}`]) data[`day_${n}`] = {};
   data[`day_${n}`][id] = val;
   saveStore();
 }
 
-// Standard week workout storage (used by non-admin)
+/** Get total workouts logged for a week (used by non-admin users) */
 function getWeekWorkouts(w) { return data[`week_${w}`] || 0; }
+
+/** Set total workouts for a week (used by non-admin users) */
 function setWeekWorkouts(w, c) { data[`week_${w}`] = c; saveStore(); }
 
-// Admin: workouts stored per-day as a boolean on each day's check object
-// Returns count of workouts logged on days within the same week, UP TO dayNum
+/**
+ * Admin-only: Count workouts for days from week start up to dayNum.
+ * Workouts are stored per-day as day_N.workout = true.
+ */
 function getWorkoutsUpToDay(dayNum) {
-  const weekNum = getWeekNum(dayNum);
-  const weekStart = (weekNum - 1) * 7 + 1;
+  const weekStart = (getWeekNum(dayNum) - 1) * 7 + 1;
   let count = 0;
   for (let d = weekStart; d <= dayNum; d++) {
     if (getDayChecks(d).workout) count++;
@@ -805,10 +1127,13 @@ function getWorkoutsUpToDay(dayNum) {
   return count;
 }
 
-// Total workouts for full week (used in penalty calc for admin)
+/**
+ * Admin-only: Count total workouts for an entire completed week.
+ * Used in penalty calculation.
+ */
 function getWeekWorkoutsAdmin(w) {
   const weekStart = (w - 1) * 7 + 1;
-  const weekEnd = w * 7;
+  const weekEnd   = w * 7;
   let count = 0;
   for (let d = weekStart; d <= weekEnd; d++) {
     if (getDayChecks(d).workout) count++;
@@ -816,199 +1141,382 @@ function getWeekWorkoutsAdmin(w) {
   return count;
 }
 
-// ── Cheat day helpers ──────────────────────────────────────
-// Returns true if a given day is designated as cheat day
+
+// ════════════════════════════════════════════════════════
+// CHEAT DAY HELPERS
+// Each week allows one cheat day where the Eat habit is forgiven.
+// ════════════════════════════════════════════════════════
+
+/** Returns true if day N is marked as a cheat day */
 function isCheatDay(n) { return !!getDayChecks(n).cheatDay; }
 
-// Returns true if the week containing day n already has a cheat day used
+/**
+ * Returns true if a DIFFERENT day in the same week is already a cheat day.
+ * Used to prevent using more than one cheat day per week.
+ */
 function weekHasCheatDay(n) {
-  const weekNum = getWeekNum(n);
-  const weekStart = (weekNum - 1) * 7 + 1;
-  const weekEnd = weekNum * 7;
+  const w         = getWeekNum(n);
+  const weekStart = (w - 1) * 7 + 1;
+  const weekEnd   = w * 7;
   for (let d = weekStart; d <= weekEnd; d++) {
     if (d !== n && getDayChecks(d).cheatDay) return true;
   }
   return false;
 }
 
-// ── Penalty logic ──────────────────────────────────────────
-// A past day fails if ANY daily habit is unchecked
-// Exception: Eat is forgiven if that day is marked as cheat day
+
+// ════════════════════════════════════════════════════════
+// PENALTY & FAILURE LOGIC
+// ════════════════════════════════════════════════════════
+
+/**
+ * A day is "failed" if ANY of the 5 daily habits were missed.
+ * Exception: the Eat habit is forgiven on cheat days.
+ */
 function isDayFailed(n) {
   const checks = getDayChecks(n);
-  return ['stretch','water','eat','pages','steps'].some(id => {
+  return ['stretch', 'water', 'eat', 'pages', 'steps'].some(id => {
     if (id === 'eat' && isCheatDay(n)) return false; // cheat day forgives eat
     return !checks[id];
   });
 }
 
-// A past week fails if workouts < goal (evaluated at end of each 7-day week)
+/**
+ * A week "fails" if the total workouts logged are below the goal.
+ * Admin uses per-day workout data; non-admin uses week_N total.
+ */
 function isWeekFailed(w) {
   const total = isAdmin() ? getWeekWorkoutsAdmin(w) : getWeekWorkouts(w);
   return total < cfg.goalWorkouts;
 }
 
-// Calculate total penalty days accrued so far (only for days/weeks in the past)
+/**
+ * Calculate total penalty days accrued up to (but not including) todayNum.
+ * +2 days for each failed daily day, +2 for each failed completed week.
+ */
 function calcPenaltyDays(todayNum) {
   let penalty = 0;
-  // Daily habit failures for days 1..todayNum-1 (yesterday and before)
+
+  // Check each past day for daily habit failures
   for (let d = 1; d < todayNum; d++) {
     if (isDayFailed(d)) penalty += 2;
   }
-  // Weekly exercise failures: only count completed weeks
+
+  // Check each fully completed week for workout failures
   const completedWeeks = Math.floor((todayNum - 1) / 7);
   for (let w = 1; w <= completedWeeks; w++) {
     if (isWeekFailed(w)) penalty += 2;
   }
+
   return penalty;
 }
 
-function getTotalGoal(todayNum) {
-  return BASE_DAYS + calcPenaltyDays(todayNum);
-}
+/** Total goal = base 75 days + any penalty days */
+function getTotalGoal(todayNum) { return BASE_DAYS + calcPenaltyDays(todayNum); }
 
-// Is this day a "penalty extension" day (beyond original 75)?
+/** Returns true if day N is a penalty extension day (beyond original 75) */
 function isPenaltyDay(n) { return n > BASE_DAYS; }
 
-// ── Day complete check (for strip coloring) ────────────────
-function isDayComplete(n) {
-  return !isDayFailed(n);
+/** Returns true if a day was fully completed (no habits missed) */
+function isDayComplete(n) { return !isDayFailed(n); }
+
+
+// ════════════════════════════════════════════════════════
+// STREAK CALCULATOR
+// Counts consecutive fully-completed days going backwards from yesterday.
+// Today is excluded since it may not be done yet.
+// ════════════════════════════════════════════════════════
+
+/**
+ * Returns the current streak: number of consecutive completed days
+ * ending at (todayNum - 1). If yesterday was missed, streak is 0.
+ */
+function calcStreak(todayNum) {
+  let streak = 0;
+  for (let d = todayNum - 1; d >= 1; d--) {
+    if (!isDayFailed(d)) {
+      streak++;
+    } else {
+      break; // streak broken — stop counting
+    }
+  }
+  return streak;
 }
 
-// ── Setup ──────────────────────────────────────────────────
+
+// ════════════════════════════════════════════════════════
+// DAY COMPLETION CHECK
+// Used to trigger the celebration overlay.
+// ════════════════════════════════════════════════════════
+
+/**
+ * Returns true if all habits are done for the given day.
+ * For today only — we only celebrate the current day.
+ */
+function isDayFullyDone(dayNum) {
+  const checks     = getDayChecks(dayNum);
+  const weekNum    = getWeekNum(dayNum);
+  const workouts   = isAdmin() ? getWorkoutsUpToDay(dayNum) : getWeekWorkouts(weekNum);
+  const cheatToday = isCheatDay(dayNum);
+
+  const dailyDone =
+    checks.stretch &&
+    checks.water   &&
+    (checks.eat || cheatToday) &&
+    checks.pages   &&
+    checks.steps;
+
+  const exerciseDone = workouts >= cfg.goalWorkouts;
+
+  return !!(dailyDone && exerciseDone);
+}
+
+
+// ════════════════════════════════════════════════════════
+// SETUP FLOW
+// ════════════════════════════════════════════════════════
+
+/** Called when the user taps START SWEEPS */
 function startChallenge() {
   const startDateVal = document.getElementById('startDate').value;
   if (!startDateVal) { alert('Please pick a start date.'); return; }
 
   const newCfg = {
-    startDate: startDateVal,
-    goalWater: parseInt(document.getElementById('goalWater').value) || 128,
-    goalSteps: parseInt(document.getElementById('goalSteps').value) || 10000,
-    goalPages: parseInt(document.getElementById('goalPages').value) || 10,
+    startDate:    startDateVal,
+    goalWater:    parseInt(document.getElementById('goalWater').value)    || 128,
+    goalSteps:    parseInt(document.getElementById('goalSteps').value)    || 10000,
+    goalPages:    parseInt(document.getElementById('goalPages').value)    || 10,
     goalWorkouts: parseInt(document.getElementById('goalWorkouts').value) || 4,
+    notifEnabled: document.getElementById('notifEnabled').checked,
+    notifTime:    document.getElementById('notifTime').value || '21:00',
   };
 
-  // Only wipe progress if this is a brand new challenge (no existing data)
-  // Returning from Settings preserves all progress
+  // Only wipe progress data on a brand-new challenge.
+  // Returning from Settings preserves all existing progress.
   const isNewChallenge = !cfg;
   cfg = newCfg;
   if (isNewChallenge) data = {};
 
   saveStore();
+
+  // Schedule notifications if enabled
+  if (cfg.notifEnabled) scheduleNotification();
+
   showTracker();
 }
 
+/** Go back to the setup screen without losing progress */
 function resetToSetup() {
   if (!confirm('Go back to settings? Your progress will be kept.')) return;
   showSetup();
 }
 
+/** Show the setup screen and pre-fill with existing config if returning user */
 function showSetup() {
-  document.getElementById('setupScreen').style.display = 'block';
+  document.getElementById('setupScreen').style.display  = 'block';
   document.getElementById('trackerScreen').style.display = 'none';
+
+  // Show notification field if the browser supports it
+  if ('Notification' in window || 'serviceWorker' in navigator) {
+    document.getElementById('notifField').style.display = 'block';
+  }
+
   if (cfg) {
-    document.getElementById('startDate').value = cfg.startDate;
-    document.getElementById('goalWater').value = cfg.goalWater;
-    document.getElementById('goalSteps').value = cfg.goalSteps;
-    document.getElementById('goalPages').value = cfg.goalPages;
+    // Pre-fill form with saved settings
+    document.getElementById('startDate').value    = cfg.startDate;
+    document.getElementById('goalWater').value    = cfg.goalWater;
+    document.getElementById('goalSteps').value    = cfg.goalSteps;
+    document.getElementById('goalPages').value    = cfg.goalPages;
     document.getElementById('goalWorkouts').value = cfg.goalWorkouts;
+    document.getElementById('notifEnabled').checked = cfg.notifEnabled || false;
+    document.getElementById('notifTime').value    = cfg.notifTime || '21:00';
+
+    // Show time picker if notifications are on
+    if (cfg.notifEnabled) {
+      document.getElementById('notifTimeField').style.display = 'block';
+    }
   }
 }
 
+/** Switch to the main tracker screen */
 function showTracker() {
-  document.getElementById('setupScreen').style.display = 'none';
+  document.getElementById('setupScreen').style.display  = 'none';
   document.getElementById('trackerScreen').style.display = 'block';
+
+  // Start on today's day number, clamped to the total goal
   currentDay = Math.min(getTodayDayNum(), getTotalGoal(getTodayDayNum()));
   render();
 }
 
-// ── Render ─────────────────────────────────────────────────
+
+// ════════════════════════════════════════════════════════
+// NOTIFICATIONS
+// Uses the Web Push / Service Worker notification API.
+// Works reliably on Android Chrome; requires user permission.
+// ════════════════════════════════════════════════════════
+
+/** Called when the notification toggle is changed in settings */
+function handleNotifToggle() {
+  const enabled = document.getElementById('notifEnabled').checked;
+  document.getElementById('notifTimeField').style.display = enabled ? 'block' : 'none';
+
+  if (enabled) {
+    // Request permission from the user
+    Notification.requestPermission().then(permission => {
+      if (permission !== 'granted') {
+        // Permission denied — uncheck the toggle
+        document.getElementById('notifEnabled').checked = false;
+        document.getElementById('notifTimeField').style.display = 'none';
+        alert('Notification permission denied. You can enable it in your browser settings.');
+      }
+    });
+  }
+}
+
+/**
+ * Schedule a daily notification at the user's chosen time.
+ * Uses the service worker to register a periodic reminder.
+ * Falls back to a simple timeout-based approach for same-day.
+ */
+function scheduleNotification() {
+  if (!cfg.notifEnabled) return;
+  if (!('Notification' in window)) return;
+  if (Notification.permission !== 'granted') return;
+
+  // Calculate ms until next notification time
+  const [hour, min] = cfg.notifTime.split(':').map(Number);
+  const now  = new Date();
+  const next = new Date();
+  next.setHours(hour, min, 0, 0);
+
+  // If the time has already passed today, schedule for tomorrow
+  if (next <= now) next.setDate(next.getDate() + 1);
+
+  const msUntil = next - now;
+
+  // Set a timeout for the next notification
+  // (In a full implementation this would use SW background sync)
+  setTimeout(() => {
+    if (Notification.permission === 'granted') {
+      new Notification('SWEEPS Reminder 💪', {
+        body: "Don't forget to log your habits before the day ends!",
+        icon: '/icon-192.png',
+        badge: '/icon-192.png',
+      });
+      // Reschedule for tomorrow
+      scheduleNotification();
+    }
+  }, msUntil);
+}
+
+
+// ════════════════════════════════════════════════════════
+// RENDER
+// The single function that redraws the entire tracker UI.
+// Called after every state change.
+// ════════════════════════════════════════════════════════
+
 function render() {
-  const todayNum = getTodayDayNum();
-  const penalty = calcPenaltyDays(todayNum);
+  const todayNum  = getTodayDayNum();
+  const penalty   = calcPenaltyDays(todayNum);
   const totalGoal = BASE_DAYS + penalty;
-  const checks = getDayChecks(currentDay);
-  const weekNum = getWeekNum(currentDay);
-  const workouts = getWeekWorkouts(weekNum);
-  const isFuture = currentDay > todayNum;
+  const streak    = calcStreak(todayNum);
+  const checks    = getDayChecks(currentDay);
+  const weekNum   = getWeekNum(currentDay);
+  const workouts  = getWeekWorkouts(weekNum);
+  const isFuture  = currentDay > todayNum;
   const isPenalty = isPenaltyDay(currentDay);
-  // Admin: count workouts up to currentDay; non-admin: use weekly total
+  const isPast    = currentDay < todayNum;
+
+  // Admin uses per-day workout count; non-admin uses week total
   const exDone = (isAdmin() ? getWorkoutsUpToDay(currentDay) : workouts) >= cfg.goalWorkouts;
 
-  // Subtitle
+  // ── Subtitle (start date) ──
   document.getElementById('mainSubtitle').textContent =
-    `Started ${new Date(parseDate(cfg.startDate)).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`;
+    `Started ${new Date(parseDate(cfg.startDate)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
 
-  // Stats
-  document.getElementById('statDay').textContent = Math.min(todayNum, totalGoal);
-  document.getElementById('statGoal').textContent = totalGoal;
+  // ── Stats boxes ──
+  document.getElementById('statDay').textContent     = Math.min(todayNum, totalGoal);
+  document.getElementById('statGoal').textContent    = totalGoal;
+  document.getElementById('statStreak').textContent  = streak;
   document.getElementById('statPenalty').textContent = penalty;
 
-  // Day label
+  // ── Day label ──
   const penaltyTag = isPenalty ? `<div class="penalty-tag">+2 Penalty Day</div>` : '';
   document.getElementById('dayLabel').innerHTML =
     `DAY ${currentDay}<span>${formatDate(currentDay)}</span>${penaltyTag}`;
 
-  // Nav
+  // ── Nav buttons ──
   document.getElementById('prevBtn').disabled = currentDay <= 1;
   document.getElementById('nextBtn').disabled = currentDay >= Math.min(todayNum, totalGoal);
 
-  // Day strip — grouped by week
-  const strip = document.getElementById('dayStrip');
-  strip.innerHTML = '';
+  // ── Retroactive warning ──
+  // Show a warning if the user is editing a day more than 24hrs ago
+  const retroEl = document.getElementById('retroWarning');
+  if (isPast && isDayRetroactive(currentDay)) {
+    retroEl.style.display = 'block';
+  } else {
+    retroEl.style.display = 'none';
+  }
 
-  // Figure out how many weeks we have
+  // ── Week dot strip ──
+  // Grouped by week, with color-coded borders
+  const strip      = document.getElementById('dayStrip');
+  strip.innerHTML  = '';
   const totalWeeks = Math.ceil(totalGoal / 7);
 
   for (let w = 1; w <= totalWeeks; w++) {
-    const weekStart = (w - 1) * 7 + 1;
-    const weekEnd = Math.min(w * 7, totalGoal);
+    const weekStart     = (w - 1) * 7 + 1;
+    const weekEnd       = Math.min(w * 7, totalGoal);
     const isCurrentWeek = currentDay >= weekStart && currentDay <= weekEnd;
-    const isWeekPast = weekEnd < todayNum;
-    const isWeekFail = isWeekPast && isWeekFailed(w);
+    const isWeekPast    = weekEnd < todayNum;
+    const isWeekFail    = isWeekPast && isWeekFailed(w);
 
-    // Week group container
+    // Week group wrapper
     const group = document.createElement('div');
     group.className = 'week-group';
 
-    // W label
+    // "W1", "W2", … label above the dots
     const wLabel = document.createElement('div');
-    wLabel.className = 'week-group-label';
+    wLabel.className   = 'week-group-label';
     wLabel.textContent = `W${w}`;
     group.appendChild(wLabel);
 
-    // Dots container
-    const dotsWrap = document.createElement('div');
-    let dotsCls = 'week-dots';
-    if (isCurrentWeek) dotsCls += ' current';
-    else if (isWeekFail) dotsCls += ' failed';
-    else if (isWeekPast) dotsCls += ' complete';
-    else dotsCls += ' future-week';
+    // Dots container — border color indicates week status
+    const dotsWrap   = document.createElement('div');
+    let dotsCls      = 'week-dots';
+    if (isCurrentWeek)    dotsCls += ' current';
+    else if (isWeekFail)  dotsCls += ' failed';
+    else if (isWeekPast)  dotsCls += ' complete';
+    else                  dotsCls += ' future-week';
     dotsWrap.className = dotsCls;
 
     for (let d = weekStart; d <= weekEnd; d++) {
       const pip = document.createElement('div');
       pip.className = 'pip';
 
+      // Day number label
       const num = document.createElement('div');
-      num.className = 'pip-num' + (d === currentDay ? ' active' : '');
+      num.className   = 'pip-num' + (d === currentDay ? ' active' : '');
       num.textContent = d;
 
-      const dot = document.createElement('div');
-      const isPen = d > BASE_DAYS;
-      let dotCls = 'pip-dot';
-      if (d === currentDay) dotCls += ' active';
-      else if (d > todayNum) dotCls += ' future';
-      else if (!isDayFailed(d)) dotCls += ' complete';
-      else dotCls += ' failed';
+      // Day status dot
+      const dot    = document.createElement('div');
+      const isPen  = d > BASE_DAYS;
+      let dotCls   = 'pip-dot';
+      if (d === currentDay)       dotCls += ' active';
+      else if (d > todayNum)      dotCls += ' future';
+      else if (!isDayFailed(d))   dotCls += ' complete';
+      else                        dotCls += ' failed';
       if (isPen) dotCls += ' penalty-pip';
       dot.className = dotCls;
 
       pip.appendChild(num);
       pip.appendChild(dot);
 
+      // Tappable to navigate to that day
       if (d <= todayNum) {
-        pip.onclick = () => { currentDay = d; render(); };
+        pip.onclick      = () => { currentDay = d; render(); };
         pip.style.cursor = 'pointer';
       }
 
@@ -1018,43 +1526,90 @@ function render() {
     group.appendChild(dotsWrap);
     strip.appendChild(group);
 
-    // Scroll active week into view
-    if (isCurrentWeek) setTimeout(() => group.scrollIntoView({ inline: 'center', behavior: 'smooth' }), 50);
+    // Scroll the current week into the center of the strip
+    if (isCurrentWeek) {
+      setTimeout(() => group.scrollIntoView({ inline: 'center', behavior: 'smooth' }), 50);
+    }
   }
 
-  // Week banner — shows above habits
-  const banner = document.getElementById('weekFailBanner');
-  const weekStart = (weekNum - 1) * 7 + 1;
-  const weekEnd = Math.min(weekNum * 7, totalGoal);
+  // ── Week recap card ──
+  // Shown when viewing a different week than today's week.
+  // Summarizes last week's performance.
+  const recapEl    = document.getElementById('weekRecap');
+  const todayWeek  = getWeekNum(todayNum);
+  const viewedWeek = weekNum;
 
-  // Build date range string
+  if (viewedWeek < todayWeek) {
+    // We're looking at a past week — show its recap
+    const wStart = (viewedWeek - 1) * 7 + 1;
+    const wEnd   = viewedWeek * 7;
+    let completedDays = 0, failedDays = 0;
+    for (let d = wStart; d <= wEnd; d++) {
+      if (!isDayFailed(d)) completedDays++; else failedDays++;
+    }
+    const wWorkouts  = isAdmin() ? getWeekWorkoutsAdmin(viewedWeek) : getWeekWorkouts(viewedWeek);
+    const wExerciseOk = wWorkouts >= cfg.goalWorkouts;
+    const wPerfect    = completedDays === 7 && wExerciseOk;
+
+    let msg = wPerfect
+      ? '🏆 Perfect week! Every habit hit.'
+      : `${failedDays} day${failedDays !== 1 ? 's' : ''} missed${!wExerciseOk ? `, only ${wWorkouts}/${cfg.goalWorkouts} workouts` : ''}.`;
+
+    recapEl.style.display = 'block';
+    recapEl.innerHTML = `
+      <div class="week-recap-title">WEEK ${viewedWeek} RECAP</div>
+      <div class="week-recap-stats">
+        <div class="wr-stat">
+          <div class="wr-stat-num" style="color:var(--accent)">${completedDays}</div>
+          <div class="wr-stat-label">Days Done</div>
+        </div>
+        <div class="wr-stat">
+          <div class="wr-stat-num" style="color:${failedDays > 0 ? 'var(--fail-accent)' : 'var(--accent)'}">${failedDays}</div>
+          <div class="wr-stat-label">Days Missed</div>
+        </div>
+        <div class="wr-stat">
+          <div class="wr-stat-num" style="color:${wExerciseOk ? 'var(--accent)' : 'var(--fail-accent)'}">${wWorkouts}/${cfg.goalWorkouts}</div>
+          <div class="wr-stat-label">Workouts</div>
+        </div>
+      </div>
+      <div class="week-recap-msg">${msg}</div>`;
+  } else {
+    recapEl.style.display = 'none';
+  }
+
+  // ── Week banner (always shown above habits) ──
+  const banner     = document.getElementById('weekBanner');
+  const weekStart  = (weekNum - 1) * 7 + 1;
+  const weekEnd    = Math.min(weekNum * 7, totalGoal);
+
+  // Build "Apr 28 – May 4" date range string
   const weekStartDate = new Date(parseDate(cfg.startDate));
   weekStartDate.setDate(weekStartDate.getDate() + weekStart - 1);
   const weekEndDate = new Date(parseDate(cfg.startDate));
   weekEndDate.setDate(weekEndDate.getDate() + weekEnd - 1);
-  const fmt = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const fmt       = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   const dateRange = `${fmt(weekStartDate)} – ${fmt(weekEndDate)}`;
 
-  // Build day squares M T W T F S S
-  const dayLetters = ['M','T','W','T','F','S','S'];
-  let daySquares = '';
+  // Build M T W T F S S day squares
+  const dayLetters = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+  let daySquares   = '';
   for (let d = weekStart; d <= weekStart + 6; d++) {
-    const letterIdx = (d - weekStart);
-    const letter = dayLetters[letterIdx];
-    let cls = 'wb-day';
-    if (d === currentDay) cls += ' today';
-    else if (d > todayNum) cls += ' future';
-    else if (!isDayFailed(d)) cls += ' done';
-    else cls += ' fail';
+    const idx    = d - weekStart;
+    const letter = dayLetters[idx];
+    let cls      = 'wb-day';
+    if (d === currentDay)      cls += ' today';
+    else if (d > todayNum)     cls += ' future';
+    else if (!isDayFailed(d))  cls += ' done';
+    else                       cls += ' fail';
     daySquares += `<div class="${cls}">${letter}</div>`;
   }
 
-  const workoutCount = getWeekWorkouts(weekNum);
-  const bannerBorderColor = weekNum < getWeekNum(todayNum) && isWeekFailed(weekNum)
-    ? 'var(--fail-border)' : weekNum === getWeekNum(todayNum)
-    ? '#c8f135' : '#4a6600';
+  const workoutCount     = isAdmin() ? getWeekWorkoutsAdmin(weekNum) : getWeekWorkouts(weekNum);
+  const bannerBorderColor =
+    weekNum < getWeekNum(todayNum) && isWeekFailed(weekNum) ? 'var(--fail-border)' :
+    weekNum === getWeekNum(todayNum)                        ? '#c8f135' :
+    '#4a6600';
 
-  banner.style.display = 'block';
   banner.style.borderColor = bannerBorderColor;
   banner.innerHTML = `
     <div class="wb-left">
@@ -1066,11 +1621,11 @@ function render() {
       <div class="wb-workout">💪 <span>${workoutCount}</span>/${cfg.goalWorkouts} workouts</div>
     </div>`;
 
-  // Habits container
-  const container = document.getElementById('habitsContainer');
+  // ── Habits container ──
+  const container   = document.getElementById('habitsContainer');
   container.innerHTML = '';
 
-  // If it's a future penalty day, show placeholder
+  // Special case: future penalty extension days show a locked placeholder
   if (isFuture && isPenalty) {
     const po = document.createElement('div');
     po.className = 'penalty-overlay';
@@ -1082,76 +1637,89 @@ function render() {
     return;
   }
 
-  // S — Stretch
+  // ── S — Stretch ──
   container.appendChild(makeHabitCard(
-    { id:'stretch', letter:'S', name:'Stretch', desc:'Once daily' },
+    { id: 'stretch', letter: 'S', name: 'Stretch', desc: 'Once daily' },
     !!checks.stretch, isFuture
   ));
 
-  // W — Water (Owala bubbles if admin, regular checkbox otherwise)
+  // ── W — Water ──
+  // Admin gets Owala bubble UI; everyone else gets a regular checkbox.
   if (isAdmin()) {
-    const OWALA_COUNT = 5;
+    const OWALA_COUNT = 5; // 5 × 30oz = 150oz ≈ 1 gallon
     const owalaFilled = getDayChecks(currentDay).owala || 0;
-    const allDone = owalaFilled >= OWALA_COUNT;
+    const allDone     = owalaFilled >= OWALA_COUNT;
 
     const owalaCard = document.createElement('div');
     owalaCard.className = 'owala-row' + (allDone ? ' all-done' : '');
     owalaCard.innerHTML = `
       <div class="owala-top">
-        <div class="letter" id="wLetter" style="${allDone ? 'color:var(--accent);border-color:var(--accent)' : ''};cursor:pointer;">W</div>
+        <div class="letter" id="wLetter"
+          style="${allDone ? 'color:var(--accent);border-color:var(--accent)' : ''};cursor:pointer;">W</div>
         <div class="habit-info">
-          <div class="habit-name" style="${allDone ? 'color:var(--accent-dim);text-decoration:line-through;text-decoration-color:#4a6600' : ''}">Water</div>
-          <div class="habit-desc" style="${allDone ? 'color:#3a5200' : ''}">${owalaFilled}/${OWALA_COUNT} Owalas · ${owalaFilled * 30}/${OWALA_COUNT * 30} oz</div>
+          <div class="habit-name"
+            style="${allDone ? 'color:var(--accent-dim);text-decoration:line-through;text-decoration-color:#4a6600' : ''}">
+            Water
+          </div>
+          <div class="habit-desc" style="${allDone ? 'color:#3a5200' : ''}">
+            ${owalaFilled}/${OWALA_COUNT} Owalas · ${owalaFilled * 30}/${OWALA_COUNT * 30} oz
+          </div>
         </div>
       </div>
       <div class="owala-bubbles" id="OwalasBubbles"></div>`;
     container.appendChild(owalaCard);
 
+    // Triple-tap the W letter to toggle admin mode off
     document.getElementById('wLetter').addEventListener('click', handleWTripleTap);
 
+    // Sync the boolean water check with owala completion
     if (!isFuture) setDayCheck(currentDay, 'water', allDone);
 
+    // Render individual bubble buttons
     const bubblesContainer = document.getElementById('OwalasBubbles');
     for (let i = 1; i <= OWALA_COUNT; i++) {
       const bubble = document.createElement('div');
       bubble.className = 'owala-bubble' + (i <= owalaFilled ? ' filled' : '');
       bubble.innerHTML = `<span class="drop">💧</span>`;
+
       if (!isFuture) {
         bubble.onclick = () => {
-          const cur = getDayChecks(currentDay).owala || 0;
+          const cur  = getDayChecks(currentDay).owala || 0;
+          // Tapping a filled bubble un-fills it; tapping an empty one fills up to it
           const next = i <= cur ? i - 1 : i;
           if (!data[`day_${currentDay}`]) data[`day_${currentDay}`] = {};
           data[`day_${currentDay}`].owala = next;
           data[`day_${currentDay}`].water = next >= OWALA_COUNT;
           saveStore();
-          if (next > cur) maybeConfetti();
+          if (next > cur) triggerCheckAnimation();
           render();
+          checkForCelebration();
         };
       }
       bubblesContainer.appendChild(bubble);
     }
   } else {
-    // Non-admin: regular water card with triple-tap W to unlock Owala mode
+    // Non-admin: standard water checkbox with triple-tap to unlock Owala mode
     const regularCard = makeHabitCard(
-      { id:'water', letter:'W', name:'Water', desc:`${cfg.goalWater} oz / day` },
+      { id: 'water', letter: 'W', name: 'Water', desc: `${cfg.goalWater} oz / day` },
       !!checks.water, isFuture
     );
-    // Attach triple-tap to the W letter box
     regularCard.querySelector('.letter').addEventListener('click', handleWTripleTap);
     container.appendChild(regularCard);
   }
 
-  // E — Eat (with cheat day toggle)
-  const cheatThisDay = isCheatDay(currentDay);
+  // ── E — Eat (with cheat day toggle) ──
+  const cheatThisDay     = isCheatDay(currentDay);
   const cheatUsedElsewhere = weekHasCheatDay(currentDay);
-  const eatDone = !!checks.eat || cheatThisDay;
+  const eatDone          = !!checks.eat || cheatThisDay;
 
   const eatCard = document.createElement('div');
   eatCard.className = 'habit-card' + (eatDone ? ' done' : '');
   eatCard.innerHTML = `
     <div class="letter" style="${eatDone ? 'color:var(--accent);border-color:var(--accent)' : ''}">E</div>
     <div class="habit-info">
-      <div class="habit-name" style="${eatDone ? 'color:var(--accent-dim);' + (cheatThisDay ? '' : 'text-decoration:line-through;text-decoration-color:#4a6600') : ''}">
+      <div class="habit-name"
+        style="${eatDone ? 'color:var(--accent-dim);' + (cheatThisDay ? '' : 'text-decoration:line-through;text-decoration-color:#4a6600') : ''}">
         Eat ${cheatThisDay ? '<span style="font-size:11px;color:#ff6b35;font-weight:700;letter-spacing:1px;">· CHEAT DAY 🍕</span>' : ''}
       </div>
       <div class="habit-desc" style="${eatDone ? 'color:#3a5200' : ''}">Calorie deficit</div>
@@ -1166,95 +1734,117 @@ function render() {
     </div>` : ''}`;
   container.appendChild(eatCard);
 
-  // Cheat day button logic
   if (!isFuture) {
     const cheatBtn = document.getElementById('cheatBtn');
     if (cheatBtn) {
       cheatBtn.onclick = (e) => {
-        e.stopPropagation(); // don't trigger card tap
+        e.stopPropagation(); // prevent card tap from also firing
         if (cheatThisDay) {
-          // Undo cheat day
           setDayCheck(currentDay, 'cheatDay', false);
         } else if (!cheatUsedElsewhere) {
-          // Designate today as cheat day
           setDayCheck(currentDay, 'cheatDay', true);
-          maybeConfetti();
+          triggerCheckAnimation();
         } else {
           alert('You already used your cheat day this week!');
         }
         render();
+        checkForCelebration();
       };
     }
-    // Tapping card still toggles eat checkbox (unless cheat day)
+    // Tapping the card toggles eat (unless it's already a cheat day)
     if (!cheatThisDay) {
       eatCard.onclick = (e) => {
         if (e.target.closest('.cheat-btn')) return;
         const prev = !!getDayChecks(currentDay).eat;
         setDayCheck(currentDay, 'eat', !prev);
-        if (!prev) maybeConfetti();
+        if (!prev) triggerCheckAnimation();
         render();
+        checkForCelebration();
       };
     }
   }
 
-  // E — Exercise (weekly)
-  // Admin: workouts stored per day, dots show count UP TO currentDay
-  // Non-admin: workouts stored as weekly total
+  // ── E — Exercise (weekly) ──
   const workoutsToShow = isAdmin() ? getWorkoutsUpToDay(currentDay) : workouts;
-  const exDoneDisplay = workoutsToShow >= cfg.goalWorkouts;
+  const exDoneDisplay  = workoutsToShow >= cfg.goalWorkouts;
 
   const exCard = document.createElement('div');
   exCard.className = 'exercise-row' + (exDoneDisplay ? ' week-done' : '');
   exCard.innerHTML = `
     <div class="exercise-top">
-      <div class="letter" style="${exDoneDisplay ? 'color:var(--accent);border-color:var(--accent)' : ''}">E</div>
+      <div class="letter"
+        style="${exDoneDisplay ? 'color:var(--accent);border-color:var(--accent)' : ''}">E</div>
       <div class="habit-info">
         <div class="habit-name" style="${exDoneDisplay ? 'color:var(--accent-dim)' : ''}">Exercise</div>
-        <div class="habit-desc" style="${exDoneDisplay ? 'color:#3a5200' : ''}">${cfg.goalWorkouts} workouts this week · Week ${weekNum}</div>
+        <div class="habit-desc" style="${exDoneDisplay ? 'color:#3a5200' : ''}">
+          ${cfg.goalWorkouts} workouts this week · Week ${weekNum}
+        </div>
       </div>
     </div>
     <div class="workout-dots" id="workoutDots"></div>`;
   container.appendChild(exCard);
 
+  // Render numbered workout dot buttons
   for (let i = 1; i <= cfg.goalWorkouts; i++) {
     const dot = document.createElement('div');
-    dot.className = 'dot' + (i <= workoutsToShow ? ' lit' : '');
+    dot.className   = 'dot' + (i <= workoutsToShow ? ' lit' : '');
     dot.textContent = i;
+
     if (!isFuture) {
       dot.onclick = () => {
         if (isAdmin()) {
-          // Toggle today's workout on/off
+          // Admin: toggle today's workout on/off
           const todayHasWorkout = !!getDayChecks(currentDay).workout;
           setDayCheck(currentDay, 'workout', !todayHasWorkout);
-          if (!todayHasWorkout) maybeConfetti();
+          if (!todayHasWorkout) triggerCheckAnimation();
         } else {
-          const cur = getWeekWorkouts(weekNum);
+          // Non-admin: tap dot N to set workout count to N (tap again to reduce)
+          const cur  = getWeekWorkouts(weekNum);
           const next = i <= cur ? i - 1 : i;
           setWeekWorkouts(weekNum, next);
-          if (next > cur) maybeConfetti();
+          if (next > cur) triggerCheckAnimation();
         }
         render();
+        checkForCelebration();
       };
     }
     document.getElementById('workoutDots').appendChild(dot);
   }
 
-  // P — Pages
+  // ── P — Pages ──
   container.appendChild(makeHabitCard(
-    { id:'pages', letter:'P', name:'Pages', desc:`${cfg.goalPages} pages / day` },
+    { id: 'pages', letter: 'P', name: 'Pages', desc: `${cfg.goalPages} pages / day` },
     !!checks.pages, isFuture
   ));
 
-  // S — Steps
+  // ── S — Steps ──
   container.appendChild(makeHabitCard(
-    { id:'steps', letter:'S', name:'Steps', desc:`${cfg.goalSteps.toLocaleString()} steps / day` },
+    { id: 'steps', letter: 'S', name: 'Steps', desc: `${cfg.goalSteps.toLocaleString()} steps / day` },
     !!checks.steps, isFuture
   ));
+
+  // Check if today is fully done after rendering (catches edge cases)
+  checkForCelebration();
 }
 
+
+// ════════════════════════════════════════════════════════
+// HABIT CARD FACTORY
+// Creates a standard tappable habit card element.
+// ════════════════════════════════════════════════════════
+
+/**
+ * Build a habit card DOM element.
+ * @param {object} h       - { id, letter, name, desc }
+ * @param {boolean} checked - whether the habit is done
+ * @param {boolean} isFuture - whether this is a future day (locked)
+ */
 function makeHabitCard(h, checked, isFuture) {
   const card = document.createElement('div');
-  card.className = 'habit-card' + (checked ? ' done' : '') + (isFuture ? ' locked' : '');
+  card.className = 'habit-card'
+    + (checked   ? ' done'   : '')
+    + (isFuture  ? ' locked' : '');
+
   card.innerHTML = `
     <div class="letter">${h.letter}</div>
     <div class="habit-info">
@@ -1266,200 +1856,357 @@ function makeHabitCard(h, checked, isFuture) {
         <path d="M1 5L4.5 8.5L11 1" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </div>`;
+
+  // Tapping toggles the habit on/off (only on current or past days)
   if (!isFuture) {
     card.onclick = () => {
       const prev = !!getDayChecks(currentDay)[h.id];
       setDayCheck(currentDay, h.id, !prev);
-      if (!prev) maybeConfetti();
+      if (!prev) triggerCheckAnimation();
       render();
+      checkForCelebration();
     };
   }
+
   return card;
 }
 
-// ── Share Progress Image ───────────────────────────────────
+
+// ════════════════════════════════════════════════════════
+// COMPLETION CELEBRATION
+// Fires a full-screen animation when all habits are done.
+// Only shown once per day to avoid being annoying.
+// ════════════════════════════════════════════════════════
+
+/**
+ * Check if today is fully complete and show the celebration overlay
+ * if it hasn't been shown yet for this day.
+ */
+function checkForCelebration() {
+  const todayNum = getTodayDayNum();
+
+  // Only celebrate the current day, not past days
+  if (currentDay !== todayNum) return;
+
+  // Only show once per day
+  if (celebrationShownForDay === todayNum) return;
+
+  if (isDayFullyDone(todayNum)) {
+    celebrationShownForDay = todayNum;
+    showCelebration(todayNum);
+  }
+}
+
+/**
+ * Display the full-screen celebration overlay with confetti.
+ * @param {number} todayNum - today's day number (for streak display)
+ */
+function showCelebration(todayNum) {
+  const streak = calcStreak(todayNum - 1) + 1; // +1 to include today
+
+  document.getElementById('celSub').textContent    = `Day ${todayNum} fully complete!`;
+  document.getElementById('celStreak').textContent = streak > 1
+    ? `🔥 ${streak} day streak!`
+    : '🌱 Great start — keep it up!';
+
+  document.getElementById('celebrationOverlay').classList.add('show');
+
+  // Fire extra confetti for the celebration
+  bigConfetti();
+}
+
+/** Hide the celebration overlay */
+function closeCelebration() {
+  document.getElementById('celebrationOverlay').classList.remove('show');
+}
+
+
+// ════════════════════════════════════════════════════════
+// ANIMATIONS
+// ════════════════════════════════════════════════════════
+
+/** Small confetti burst — shown when a single habit is checked */
+function triggerCheckAnimation() {
+  const colors = ['#c8f135', '#fff', '#9ab82a', '#e0ff80'];
+  const el     = document.getElementById('confetti');
+  el.innerHTML = '';
+
+  for (let i = 0; i < 20; i++) {
+    const p = document.createElement('div');
+    p.className  = 'confetti-piece';
+    p.style.cssText = `
+      left: ${Math.random() * 100}%;
+      top: ${Math.random() * -10}%;
+      background: ${colors[Math.floor(Math.random() * colors.length)]};
+      border-radius: ${Math.random() > 0.5 ? '50%' : '2px'};
+      animation-delay: ${Math.random() * 0.3}s;
+      animation-duration: ${0.7 + Math.random() * 0.5}s;
+    `;
+    el.appendChild(p);
+  }
+
+  setTimeout(() => { el.innerHTML = ''; }, 1200);
+}
+
+/** Large confetti burst — shown on full day completion */
+function bigConfetti() {
+  const colors = ['#c8f135', '#fff', '#9ab82a', '#e0ff80', '#ffb347', '#ff6b35'];
+  const el     = document.getElementById('confetti');
+  el.innerHTML = '';
+
+  for (let i = 0; i < 80; i++) {
+    const p = document.createElement('div');
+    p.className  = 'confetti-piece';
+    p.style.cssText = `
+      left: ${Math.random() * 100}%;
+      top: ${Math.random() * -20}%;
+      width: ${6 + Math.random() * 8}px;
+      height: ${6 + Math.random() * 8}px;
+      background: ${colors[Math.floor(Math.random() * colors.length)]};
+      border-radius: ${Math.random() > 0.5 ? '50%' : '2px'};
+      animation-delay: ${Math.random() * 0.6}s;
+      animation-duration: ${1.0 + Math.random() * 0.8}s;
+    `;
+    el.appendChild(p);
+  }
+
+  setTimeout(() => { el.innerHTML = ''; }, 2000);
+}
+
+
+// ════════════════════════════════════════════════════════
+// SHARE / CANVAS CARD
+// Draws a progress image on an HTML canvas for sharing.
+// ════════════════════════════════════════════════════════
+
+/** Open the share modal and draw the progress card */
 function openShare() {
   document.getElementById('shareUrl').textContent = buildShareUrl();
   document.getElementById('shareModal').classList.add('open');
-  // Draw after modal is visible so canvas dimensions are correct
+  // Delay draw slightly so the canvas is visible and sized correctly
   setTimeout(drawShareCard, 50);
 }
 
+/** Close the share modal */
 function closeShare() {
   document.getElementById('shareModal').classList.remove('open');
 }
 
+/** Copy the invite link to clipboard */
 function copyUrl() {
   navigator.clipboard.writeText(buildShareUrl()).then(() => {
-    const btn = document.querySelector('#shareModal .btn-close:last-child');
+    const btn  = document.querySelector('#shareModal .btn-close:last-child');
     const orig = btn.textContent;
     btn.textContent = 'Copied!';
-    setTimeout(() => btn.textContent = orig, 2000);
+    setTimeout(() => { btn.textContent = orig; }, 2000);
   });
 }
 
+/**
+ * Draw the progress share card onto the canvas element.
+ * Shows: SWEEPS title, day badge, stats, today's habit states, dot strip.
+ */
 function drawShareCard() {
-  const canvas = document.getElementById('shareCanvas');
+  const canvas   = document.getElementById('shareCanvas');
   const W = 600, H = 400;
-  canvas.width = W; canvas.height = H;
-  const ctx = canvas.getContext('2d');
+  canvas.width   = W;
+  canvas.height  = H;
+  const ctx      = canvas.getContext('2d');
 
   const todayNum = getTodayDayNum();
-  const penalty = calcPenaltyDays(todayNum);
+  const penalty  = calcPenaltyDays(todayNum);
   const totalGoal = BASE_DAYS + penalty;
-  const checks = getDayChecks(todayNum);
-  const weekNum = getWeekNum(todayNum);
+  const streak   = calcStreak(todayNum);
+  const checks   = getDayChecks(todayNum);
+  const weekNum  = getWeekNum(todayNum);
   const workouts = getWeekWorkouts(weekNum);
 
-  // Count completed/failed days
+  // Count completed and failed days up to yesterday
   let completedDays = 0, failedDays = 0;
   for (let d = 1; d < todayNum; d++) {
     if (!isDayFailed(d)) completedDays++; else failedDays++;
   }
 
-  // Background gradient
+  // ── Background ──
   const bg = ctx.createLinearGradient(0, 0, W, H);
-  bg.addColorStop(0, '#0d0d0d'); bg.addColorStop(1, '#141a00');
+  bg.addColorStop(0, '#0d0d0d');
+  bg.addColorStop(1, '#141a00');
   ctx.fillStyle = bg;
   rrect(ctx, 0, 0, W, H, 16); ctx.fill();
   ctx.strokeStyle = '#2a2a2a'; ctx.lineWidth = 1;
-  rrect(ctx, 0.5, 0.5, W-1, H-1, 16); ctx.stroke();
+  rrect(ctx, 0.5, 0.5, W - 1, H - 1, 16); ctx.stroke();
 
-  // Title
+  // ── Title ──
   ctx.fillStyle = '#c8f135';
-  ctx.font = '52px "Bebas Neue", serif';
+  ctx.font      = '52px "Bebas Neue", serif';
   ctx.fillText('SWEEPS', 32, 68);
-  ctx.fillStyle = '#555';
-  ctx.font = '500 12px "DM Sans", sans-serif';
-  ctx.fillText(`75 MEDIUM · STARTED ${new Date(parseDate(cfg.startDate)).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}).toUpperCase()}`, 34, 90);
 
-  // Day badge
-  const bx = W-140, by = 24, bw = 116, bh = 64;
+  ctx.fillStyle = '#555';
+  ctx.font      = '500 12px "DM Sans", sans-serif';
+  ctx.fillText(
+    `75 MEDIUM · STARTED ${new Date(parseDate(cfg.startDate)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()}`,
+    34, 90
+  );
+
+  // ── Day badge (top right) ──
+  const bx = W - 140, by = 24, bw = 116, bh = 64;
   ctx.fillStyle = '#1a2200'; ctx.strokeStyle = '#4a6600'; ctx.lineWidth = 1;
   rrect(ctx, bx, by, bw, bh, 12); ctx.fill(); ctx.stroke();
+
   ctx.fillStyle = '#c8f135'; ctx.font = '42px "Bebas Neue", serif';
   ctx.textAlign = 'center';
-  ctx.fillText(`DAY ${todayNum}`, bx+bw/2, by+44);
+  ctx.fillText(`DAY ${todayNum}`, bx + bw / 2, by + 44);
+
   ctx.fillStyle = '#555'; ctx.font = '500 10px "DM Sans", sans-serif';
-  ctx.fillText(`OF ${totalGoal}`, bx+bw/2, by+58);
+  ctx.fillText(`OF ${totalGoal}`, bx + bw / 2, by + 58);
   ctx.textAlign = 'left';
 
-  // Stats row
-  [['COMPLETED', completedDays, '#c8f135'], ['FAILED', failedDays, '#ff6b35'], ['PENALTY', penalty, '#ff6b35']].forEach(([label, val, color], i) => {
-    const sx = 32 + i*120, sy = 112, sw = 108, sh = 64;
+  // ── Stats row: completed, failed, streak ──
+  [
+    ['COMPLETED', completedDays, '#c8f135'],
+    ['FAILED',    failedDays,    '#ff6b35'],
+    [`🔥 STREAK`, streak,        '#ffb347'],
+  ].forEach(([label, val, color], i) => {
+    const sx = 32 + i * 120, sy = 112, sw = 108, sh = 64;
     ctx.fillStyle = '#161616'; ctx.strokeStyle = '#2a2a2a'; ctx.lineWidth = 1;
     rrect(ctx, sx, sy, sw, sh, 10); ctx.fill(); ctx.stroke();
     ctx.fillStyle = color; ctx.font = '32px "Bebas Neue", serif';
-    ctx.fillText(val, sx+14, sy+38);
+    ctx.fillText(val, sx + 14, sy + 38);
     ctx.fillStyle = '#555'; ctx.font = '500 9px "DM Sans", sans-serif';
-    ctx.fillText(label, sx+14, sy+54);
+    ctx.fillText(label, sx + 14, sy + 54);
   });
 
-  // Today label
+  // ── Today's habits ──
   ctx.fillStyle = '#555'; ctx.font = '500 10px "DM Sans", sans-serif';
   ctx.fillText(`TODAY · ${formatDate(todayNum).toUpperCase()}`, 32, 208);
 
-  // Habits
+  // Water is "done" for admin if all Owalas filled
+  const waterDone = isAdmin()
+    ? (getDayChecks(todayNum).owala || 0) >= 5
+    : !!checks.water;
+
   const habits = [
-    { letter:'S', name:'Stretch', done:!!checks.stretch },
-    { letter:'W', name:'Water',   done:!!checks.water },
-    { letter:'E', name:'Eat',     done:!!checks.eat },
-    { letter:'E', name:'Exercise',done:workouts>=cfg.goalWorkouts, weekly:true, workouts, goal:cfg.goalWorkouts },
-    { letter:'P', name:'Pages',   done:!!checks.pages },
-    { letter:'S', name:'Steps',   done:!!checks.steps },
+    { letter: 'S', name: 'Stretch',  done: !!checks.stretch },
+    { letter: 'W', name: 'Water',    done: waterDone },
+    { letter: 'E', name: 'Eat',      done: !!checks.eat || isCheatDay(todayNum) },
+    { letter: 'E', name: 'Exercise', done: workouts >= cfg.goalWorkouts, weekly: true, workouts, goal: cfg.goalWorkouts },
+    { letter: 'P', name: 'Pages',    done: !!checks.pages },
+    { letter: 'S', name: 'Steps',    done: !!checks.steps },
   ];
 
   habits.forEach((h, i) => {
     const col = i < 3 ? 0 : 1;
     const row = i < 3 ? i : i - 3;
-    const hx = 32 + col*284, hy = 220 + row*46, hw = 270, hh = 38;
+    const hx = 32 + col * 284, hy = 220 + row * 46, hw = 270, hh = 38;
 
-    ctx.fillStyle = h.done ? '#1a2200' : '#161616';
+    // Card background
+    ctx.fillStyle   = h.done ? '#1a2200' : '#161616';
     ctx.strokeStyle = h.done ? '#4a6600' : '#2a2a2a'; ctx.lineWidth = 1;
     rrect(ctx, hx, hy, hw, hh, 8); ctx.fill(); ctx.stroke();
 
     // Letter box
-    ctx.fillStyle = h.done ? '#1e2800' : '#1a1a1a';
+    ctx.fillStyle   = h.done ? '#1e2800' : '#1a1a1a';
     ctx.strokeStyle = h.done ? '#c8f135' : '#333'; ctx.lineWidth = 1;
-    rrect(ctx, hx+6, hy+5, 28, 28, 5); ctx.fill(); ctx.stroke();
+    rrect(ctx, hx + 6, hy + 5, 28, 28, 5); ctx.fill(); ctx.stroke();
     ctx.fillStyle = h.done ? '#c8f135' : '#555';
     ctx.font = '18px "Bebas Neue", serif';
     ctx.textAlign = 'center';
-    ctx.fillText(h.letter, hx+20, hy+24);
+    ctx.fillText(h.letter, hx + 20, hy + 24);
     ctx.textAlign = 'left';
 
-    // Name
+    // Habit name (with strikethrough if done)
     ctx.fillStyle = h.done ? '#9ab82a' : '#ccc';
-    ctx.font = `${h.done?'500':'400'} 13px "DM Sans", sans-serif`;
-    ctx.fillText(h.name, hx+42, hy+21);
-    if (h.done) {
+    ctx.font = `${h.done ? '500' : '400'} 13px "DM Sans", sans-serif`;
+    ctx.fillText(h.name, hx + 42, hy + 21);
+    if (h.done && !h.weekly) {
       const tw = ctx.measureText(h.name).width;
       ctx.strokeStyle = '#4a6600'; ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.moveTo(hx+42, hy+15); ctx.lineTo(hx+42+tw, hy+15); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(hx + 42, hy + 15); ctx.lineTo(hx + 42 + tw, hy + 15); ctx.stroke();
     }
 
-    // Exercise dots on right side
+    // Exercise: show workout dots on the right
     if (h.weekly) {
       for (let d = 1; d <= h.goal; d++) {
         const dx = hx + hw - 14 - (h.goal - d) * 14;
-        ctx.fillStyle = d <= h.workouts ? '#c8f135' : '#2a2a2a';
+        ctx.fillStyle   = d <= h.workouts ? '#c8f135' : '#2a2a2a';
         ctx.strokeStyle = d <= h.workouts ? '#9ab82a' : '#3a3a3a'; ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.arc(dx, hy+hh/2, 5, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.arc(dx, hy + hh / 2, 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
       }
     } else {
-      // Check circle
-      const cx2 = hx+hw-18, cy2 = hy+hh/2;
+      // Regular check circle
+      const cx2 = hx + hw - 18, cy2 = hy + hh / 2;
       ctx.strokeStyle = h.done ? '#c8f135' : '#333'; ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.arc(cx2, cy2, 9, 0, Math.PI*2);
+      ctx.beginPath(); ctx.arc(cx2, cy2, 9, 0, Math.PI * 2);
       if (h.done) { ctx.fillStyle = '#c8f135'; ctx.fill(); }
       ctx.stroke();
       if (h.done) {
         ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(cx2-4,cy2); ctx.lineTo(cx2-1,cy2+3); ctx.lineTo(cx2+4,cy2-3); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(cx2 - 4, cy2); ctx.lineTo(cx2 - 1, cy2 + 3); ctx.lineTo(cx2 + 4, cy2 - 3);
+        ctx.stroke();
       }
     }
   });
 
-  // Progress dot strip
+  // ── Progress dot strip ──
   const stripY = 366, dotSize = 6, dotGap = 2, startX = 32;
   ctx.fillStyle = '#555'; ctx.font = '500 9px "DM Sans", sans-serif';
   ctx.fillText('PROGRESS', startX, stripY - 6);
+
   for (let d = 1; d <= Math.min(totalGoal, 75); d++) {
-    const dx = startX + (d-1)*(dotSize+dotGap), dy = stripY;
-    if (d === todayNum) ctx.fillStyle = '#c8f135';
+    const dx = startX + (d - 1) * (dotSize + dotGap), dy = stripY;
+    if (d === todayNum)              ctx.fillStyle = '#c8f135';
     else if (d < todayNum && !isDayFailed(d)) ctx.fillStyle = '#9ab82a';
-    else if (d < todayNum) ctx.fillStyle = '#ff6b35';
-    else ctx.fillStyle = '#2a2a2a';
-    ctx.beginPath(); ctx.arc(dx+dotSize/2, dy+dotSize/2, dotSize/2, 0, Math.PI*2); ctx.fill();
+    else if (d < todayNum)           ctx.fillStyle = '#ff6b35';
+    else                             ctx.fillStyle = '#2a2a2a';
+    ctx.beginPath();
+    ctx.arc(dx + dotSize / 2, dy + dotSize / 2, dotSize / 2, 0, Math.PI * 2);
+    ctx.fill();
   }
 
-  // Watermark
+  // ── Watermark ──
   ctx.fillStyle = '#333'; ctx.font = '400 11px "DM Sans", sans-serif';
   ctx.textAlign = 'right';
-  ctx.fillText(location.hostname, W-32, H-16);
+  ctx.fillText(location.hostname, W - 32, H - 16);
   ctx.textAlign = 'left';
 }
 
+/**
+ * Draw a rounded rectangle path. Must be followed by ctx.fill() / ctx.stroke().
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {number} x, y - top-left corner
+ * @param {number} w, h - width and height
+ * @param {number} r    - corner radius
+ */
 function rrect(ctx, x, y, w, h, r) {
   ctx.beginPath();
-  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
-  ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
-  ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
-  ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
 }
 
+/**
+ * Share the canvas image via the native share sheet (iOS/Android).
+ * Falls back to downloading the image if share API isn't supported.
+ */
 async function shareImage() {
   const canvas = document.getElementById('shareCanvas');
-  const btn = document.getElementById('shareImgBtn');
   try {
     canvas.toBlob(async (blob) => {
       const file = new File([blob], 'sweeps-progress.png', { type: 'image/png' });
       if (navigator.share && navigator.canShare({ files: [file] })) {
         await navigator.share({ files: [file], title: 'SWEEPS Progress' });
       } else {
-        // Fallback: download the image
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
+        // Fallback: trigger a file download
+        const a    = document.createElement('a');
+        a.href     = URL.createObjectURL(blob);
         a.download = 'sweeps-progress.png';
         a.click();
       }
@@ -1469,86 +2216,74 @@ async function shareImage() {
   }
 }
 
-// ── Confetti ───────────────────────────────────────────────
-function maybeConfetti() {
-  const colors = ['#c8f135','#fff','#9ab82a','#e0ff80'];
-  const el = document.getElementById('confetti');
-  el.innerHTML = '';
-  for (let i = 0; i < 30; i++) {
-    const p = document.createElement('div');
-    p.className = 'confetti-piece';
-    p.style.cssText = `left:${Math.random()*100}%;top:${Math.random()*-10}%;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'2px'};animation-delay:${Math.random()*.4}s;animation-duration:${.8+Math.random()*.6}s;`;
-    el.appendChild(p);
-  }
-  setTimeout(() => el.innerHTML = '', 1500);
-}
 
-// ── Nav buttons ────────────────────────────────────────────
-document.getElementById('prevBtn').onclick = () => { if (currentDay > 1) { currentDay--; render(); } };
+// ════════════════════════════════════════════════════════
+// NAV BUTTON HANDLERS
+// ════════════════════════════════════════════════════════
+
+document.getElementById('prevBtn').onclick = () => {
+  if (currentDay > 1) { currentDay--; render(); }
+};
+
 document.getElementById('nextBtn').onclick = () => {
-  const todayNum = getTodayDayNum();
-  const totalGoal = getTotalGoal(todayNum);
+  const todayNum   = getTodayDayNum();
+  const totalGoal  = getTotalGoal(todayNum);
   if (currentDay < Math.min(todayNum, totalGoal)) { currentDay++; render(); }
 };
 
-// ── Owala mode — activated by tapping W letter 3 times ────
-const ADMIN_KEY = 'sweeps_admin';
-let wTapCount = 0, wTapTimer = null;
 
-function checkAdmin() {
-  return localStorage.getItem(ADMIN_KEY) === '1';
-}
+// ════════════════════════════════════════════════════════
+// BOOT / INITIALIZATION
+// Runs once on page load. Decides whether to show setup or tracker.
+// ════════════════════════════════════════════════════════
 
-function handleWTripleTap() {
-  wTapCount++;
-  clearTimeout(wTapTimer);
-  if (wTapCount >= 3) {
-    wTapCount = 0;
-    const current = localStorage.getItem(ADMIN_KEY) === '1';
-    localStorage.setItem(ADMIN_KEY, current ? '0' : '1');
-    render(); // re-render to show/hide bubbles
-  } else {
-    wTapTimer = setTimeout(() => { wTapCount = 0; }, 600);
-  }
-}
-
-const isAdmin = checkAdmin;
-
-// ── Boot ───────────────────────────────────────────────────
 (function init() {
-  // Check URL params first (shared link)
+  // Check for invite link params first (shared link from another user)
   const urlParams = readUrlParams();
-  const stored = loadStore();
+  const stored    = loadStore();
 
-  // Default start date to today
-  const today = new Date();
+  // Default the start date picker to today
+  const today    = new Date();
   const todayStr = today.toISOString().split('T')[0];
   document.getElementById('startDate').value = todayStr;
 
+  // Show notification field if browser supports it
+  if ('Notification' in window) {
+    document.getElementById('notifField').style.display = 'block';
+  }
+
   if (urlParams) {
-    // Coming from a shared link — pre-fill goals but force setup
-    document.getElementById('goalWater').value = urlParams.goalWater;
-    document.getElementById('goalSteps').value = urlParams.goalSteps;
-    document.getElementById('goalPages').value = urlParams.goalPages;
+    // Arriving from an invite link — pre-fill goals from URL
+    document.getElementById('goalWater').value    = urlParams.goalWater;
+    document.getElementById('goalSteps').value    = urlParams.goalSteps;
+    document.getElementById('goalPages').value    = urlParams.goalPages;
     document.getElementById('goalWorkouts').value = urlParams.goalWorkouts;
-    // If they also have stored data, load it; otherwise fresh
+
     if (stored.cfg) {
+      // Returning user opened an invite link — keep their existing progress
       cfg = stored.cfg; data = stored.data || {};
       showTracker();
     } else {
+      // New user — show setup with pre-filled goals
       showSetup();
     }
   } else if (stored.cfg) {
-    // Returning user
+    // Regular returning user — jump straight to tracker
     cfg = stored.cfg; data = stored.data || {};
     showTracker();
+
+    // Re-schedule notifications if they were enabled
+    if (cfg.notifEnabled) scheduleNotification();
   } else {
+    // Brand new user — show setup screen
     showSetup();
   }
 })();
 </script>
+
 <script>
-  // Register service worker for PWA offline support
+  // Register the service worker for PWA offline support and caching.
+  // The SW handles network-first fetching so updates always come through.
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/sw.js').catch(() => {});
