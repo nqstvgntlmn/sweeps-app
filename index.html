@@ -661,7 +661,149 @@
     cursor: pointer;
   }
 
-  /* ── Retroactive edit warning banner ── */
+  /* ── Week celebration overlay ── */
+  .week-cel-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.93);
+    z-index: 400; /* above day celebration */
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    animation: fadeInCelebration 0.4s ease-out;
+  }
+
+  .week-cel-overlay.show { display: flex; }
+
+  .week-cel-card {
+    width: 100%;
+    max-width: 400px;
+    background: linear-gradient(135deg, #c8f135 0%, #4a6600 50%, #c8f135 100%);
+    background-size: 200% 200%;
+    animation: borderGlow 3s ease infinite;
+    border-radius: 24px;
+    padding: 2px;
+  }
+
+  @keyframes borderGlow {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  .week-cel-inner {
+    background: #111;
+    border-radius: 22px;
+    padding: 32px 24px;
+    text-align: center;
+  }
+
+  .week-cel-trophy {
+    font-size: 60px;
+    margin-bottom: 8px;
+    display: block;
+    animation: bounce 0.6s cubic-bezier(.36,1.56,.64,1) both;
+  }
+
+  .week-cel-badge {
+    display: inline-block;
+    background: #1a2200;
+    border: 1px solid #4a6600;
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: #9ab82a;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .week-cel-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 48px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .week-cel-sub { font-size: 13px; color: #555; margin-bottom: 20px; line-height: 1.5; }
+
+  .week-cel-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .wcs-box {
+    background: #161616;
+    border: 1px solid #2a2a2a;
+    border-radius: 10px;
+    padding: 12px 6px;
+  }
+
+  .wcs-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .wcs-num.orange { color: #ff6b35; }
+  .wcs-num.fire   { color: #ffb347; }
+
+  .wcs-label { font-size: 9px; color: #555; letter-spacing: 1.5px; text-transform: uppercase; margin-top: 3px; }
+
+  .week-cel-grid {
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+
+  .wcg-day {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 700;
+    gap: 1px;
+  }
+
+  .wcg-day.done { background: #1a2200; border: 1px solid #4a6600; color: #9ab82a; }
+  .wcg-day.fail { background: #1a0a00; border: 1px solid #5a2000; color: #ff6b35; }
+  .wcg-day.future { background: #161616; border: 1px solid #2a2a2a; color: #333; }
+
+  .week-cel-btn {
+    width: 100%;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 12px;
+    padding: 14px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    letter-spacing: 3px;
+    cursor: pointer;
+    margin-bottom: 8px;
+  }
+
+  .week-cel-skip {
+    width: 100%;
+    background: transparent;
+    color: #444;
+    border: none;
+    font-size: 12px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    padding: 6px;
+    font-family: 'DM Sans', sans-serif;
+  }
   .retro-warning {
     display: none;
     max-width: 480px;
@@ -914,6 +1056,22 @@
   <div class="cel-sub" id="celSub">All habits checked off</div>
   <div class="cel-streak" id="celStreak"></div>
   <button class="cel-close" onclick="closeCelebration()">KEEP GOING</button>
+</div>
+
+<!-- Week completion celebration overlay -->
+<div class="week-cel-overlay" id="weekCelebrationOverlay">
+  <div class="week-cel-card">
+    <div class="week-cel-inner">
+      <div class="week-cel-trophy">🏆</div>
+      <div class="week-cel-badge" id="weekCelBadge">WEEK 1 COMPLETE</div>
+      <div class="week-cel-title">WEEK DONE!</div>
+      <div class="week-cel-sub" id="weekCelSub">You crushed it. Keep the momentum going.</div>
+      <div class="week-cel-stats" id="weekCelStats"></div>
+      <div class="week-cel-grid" id="weekCelGrid"></div>
+      <button class="week-cel-btn" id="weekCelBtn" onclick="closeWeekCelebration()">LET'S GO 💪</button>
+      <button class="week-cel-skip" onclick="closeWeekCelebration()">Dismiss</button>
+    </div>
+  </div>
 </div>
 
 <!-- Confetti particles container -->
@@ -1852,6 +2010,9 @@ function checkForCelebration() {
     celebrationShownForDay = todayNum;
     showCelebration(todayNum);
   }
+
+  // Also check if we just crossed into a new week and should show week recap
+  checkForWeekCelebration();
 }
 
 /**
@@ -1875,6 +2036,113 @@ function showCelebration(todayNum) {
 /** Hide the celebration overlay */
 function closeCelebration() {
   document.getElementById('celebrationOverlay').classList.remove('show');
+}
+
+// ════════════════════════════════════════════════════════
+// WEEK CELEBRATION
+// Shown on the first day of a new week when the previous week
+// had all workouts completed. Each week is only celebrated once.
+// ════════════════════════════════════════════════════════
+
+/** localStorage key tracking which week celebrations have been shown */
+const WEEK_CEL_KEY = 'sweeps_week_celebrations';
+
+/** Returns a Set of week numbers already celebrated */
+function getCelebratedWeeks() {
+  try { return new Set(JSON.parse(localStorage.getItem(WEEK_CEL_KEY)) || []); }
+  catch { return new Set(); }
+}
+
+/** Mark a week number as celebrated so we never show it again */
+function markWeekCelebrated(w) {
+  const set = getCelebratedWeeks();
+  set.add(w);
+  localStorage.setItem(WEEK_CEL_KEY, JSON.stringify([...set]));
+}
+
+/**
+ * Check whether we should trigger the week celebration.
+ * Fires on day 1 of a new week if the previous week's workouts were done
+ * and we haven't shown that week's celebration yet.
+ */
+function checkForWeekCelebration() {
+  const todayNum  = getTodayDayNum();
+  const weekNum   = getWeekNum(todayNum);
+  const dayInWeek = ((todayNum - 1) % 7) + 1;
+
+  // Only fire on the first day of a new week, and only if there's a previous week
+  if (dayInWeek !== 1 || weekNum <= 1) return;
+
+  const prevWeek   = weekNum - 1;
+  if (getCelebratedWeeks().has(prevWeek)) return; // already shown
+
+  // Previous week must have hit the workout goal
+  const prevWorkouts = isAdmin() ? getWeekWorkoutsAdmin(prevWeek) : getWeekWorkouts(prevWeek);
+  if (prevWorkouts < cfg.goalWorkouts) return;
+
+  showWeekCelebration(prevWeek);
+  markWeekCelebrated(prevWeek);
+}
+
+/**
+ * Build and show the week celebration overlay for the given week number.
+ * @param {number} weekNum - the completed week number
+ */
+function showWeekCelebration(weekNum) {
+  const todayNum  = getTodayDayNum();
+  const weekStart = (weekNum - 1) * 7 + 1;
+  const weekEnd   = weekNum * 7;
+  const workouts  = isAdmin() ? getWeekWorkoutsAdmin(weekNum) : getWeekWorkouts(weekNum);
+  const streak    = calcStreak(todayNum);
+
+  // Count days completed vs failed in the week
+  let doneDays = 0, failDays = 0;
+  for (let d = weekStart; d <= weekEnd; d++) {
+    if (!isDayFailed(d)) doneDays++; else failDays++;
+  }
+
+  // Populate overlay text
+  document.getElementById('weekCelBadge').textContent = `WEEK ${weekNum} COMPLETE`;
+  document.getElementById('weekCelSub').textContent   = failDays === 0
+    ? 'Perfect week! Every single habit done. 🔥'
+    : `${doneDays}/7 days completed. Keep pushing!`;
+  document.getElementById('weekCelBtn').textContent   = `START WEEK ${weekNum + 1} 💪`;
+
+  // Stats grid
+  document.getElementById('weekCelStats').innerHTML = `
+    <div class="wcs-box">
+      <div class="wcs-num">${doneDays}/7</div>
+      <div class="wcs-label">Days Done</div>
+    </div>
+    <div class="wcs-box">
+      <div class="wcs-num">${workouts}/${cfg.goalWorkouts}</div>
+      <div class="wcs-label">Workouts</div>
+    </div>
+    <div class="wcs-box">
+      <div class="wcs-num fire">🔥 ${streak}</div>
+      <div class="wcs-label">Streak</div>
+    </div>`;
+
+  // Day-by-day grid
+  const dayLetters = ['M','T','W','T','F','S','S'];
+  const gridEl = document.getElementById('weekCelGrid');
+  gridEl.innerHTML = '';
+  for (let i = 0; i < 7; i++) {
+    const d   = weekStart + i;
+    const box = document.createElement('div');
+    box.className = `wcg-day ${!isDayFailed(d) ? 'done' : 'fail'}`;
+    box.innerHTML = `<span>${dayLetters[i]}</span><span>${!isDayFailed(d) ? '✓' : '✗'}</span>`;
+    gridEl.appendChild(box);
+  }
+
+  // Show overlay and celebrate
+  document.getElementById('weekCelebrationOverlay').classList.add('show');
+  maybeConfetti();
+}
+
+/** Dismiss the week celebration overlay */
+function closeWeekCelebration() {
+  document.getElementById('weekCelebrationOverlay').classList.remove('show');
 }
 
 
@@ -1978,11 +2246,15 @@ function drawShareCard() {
   const weekNum  = getWeekNum(todayNum);
   const workouts = getWeekWorkouts(weekNum);
 
-  // Count completed and failed days up to yesterday
+  // Count completed and failed days.
+  // Include today if all daily habits are done — same logic as streak.
   let completedDays = 0, failedDays = 0;
   for (let d = 1; d < todayNum; d++) {
     if (!isDayFailed(d)) completedDays++; else failedDays++;
   }
+  // Include today if fully done (daily habits only — workouts are weekly)
+  if (isDayFullyDone(todayNum)) completedDays++;
+  else if (todayNum > 1) failedDays; // today still in progress — don't count as failed
 
   // ── Background ──
   const bg = ctx.createLinearGradient(0, 0, W, H);
