@@ -1234,11 +1234,26 @@ function isDayComplete(n) { return !isDayFailed(n); }
 // ════════════════════════════════════════════════════════
 
 /**
- * Returns the current streak: number of consecutive completed days
- * ending at (todayNum - 1). If yesterday was missed, streak is 0.
+ * Returns the current streak: consecutive days with all daily habits completed.
+ * Includes today if all 5 daily habits are done (workouts excluded — they're weekly).
  */
 function calcStreak(todayNum) {
   let streak = 0;
+
+  // Check today first — include it if all daily habits are done
+  // (workouts are not part of the daily streak calculation)
+  const todayChecks  = getDayChecks(todayNum);
+  const cheatToday   = isCheatDay(todayNum);
+  const todayDailyDone =
+    todayChecks.stretch &&
+    todayChecks.water   &&
+    (todayChecks.eat || cheatToday) &&
+    todayChecks.pages   &&
+    todayChecks.steps;
+
+  if (todayDailyDone) streak++;
+
+  // Now count backwards through past days
   for (let d = todayNum - 1; d >= 1; d--) {
     if (!isDayFailed(d)) {
       streak++;
@@ -1256,25 +1271,22 @@ function calcStreak(todayNum) {
 // ════════════════════════════════════════════════════════
 
 /**
- * Returns true if all habits are done for the given day.
- * For today only — we only celebrate the current day.
+ * Returns true if all DAILY habits are done for today.
+ * Workouts are intentionally excluded — they're a weekly goal,
+ * not a daily requirement, so they shouldn't block the celebration.
  */
 function isDayFullyDone(dayNum) {
   const checks     = getDayChecks(dayNum);
-  const weekNum    = getWeekNum(dayNum);
-  const workouts   = isAdmin() ? getWorkoutsUpToDay(dayNum) : getWeekWorkouts(weekNum);
   const cheatToday = isCheatDay(dayNum);
 
-  const dailyDone =
+  // Only check the 5 daily habits — workouts are weekly
+  return !!(
     checks.stretch &&
     checks.water   &&
     (checks.eat || cheatToday) &&
     checks.pages   &&
-    checks.steps;
-
-  const exerciseDone = workouts >= cfg.goalWorkouts;
-
-  return !!(dailyDone && exerciseDone);
+    checks.steps
+  );
 }
 
 
