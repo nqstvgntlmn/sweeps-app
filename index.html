@@ -2211,14 +2211,20 @@ function render() {
   const fmt       = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   const dateRange = `${fmt(weekStartDate)} – ${fmt(weekEndDate)}`;
 
-  // Build M T W T F S S day squares
-  const dayLetters = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-  let daySquares   = '';
+  // Build day letter squares starting from the challenge's actual start day.
+  // e.g. if challenge started Tuesday, week grid shows T W T F S S M.
+  // Day-of-week: 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
+  const ALL_DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  const startDow        = parseDate(cfg.startDate).getDay(); // day of week challenge started
+
+  let daySquares = '';
   for (let d = weekStart; d <= weekStart + 6; d++) {
     const idx    = d - weekStart;
-    const letter = dayLetters[idx];
+    // Rotate day letters so the first square matches the challenge start day
+    const letter = ALL_DAY_LETTERS[(startDow + idx) % 7];
     let cls      = 'wb-day';
-    if (d === currentDay)      cls += ' today';
+    // Use todayNum for the "today" highlight — not currentDay (which could be a past day)
+    if (d === todayNum)        cls += ' today';
     else if (d > todayNum)     cls += ' future';
     else if (!isDayFailed(d))  cls += ' done';
     else                       cls += ' fail';
@@ -2647,15 +2653,17 @@ function showWeekCelebration(weekNum) {
       <div class="wcs-label">Streak</div>
     </div>`;
 
-  // Day-by-day grid
-  const dayLetters = ['M','T','W','T','F','S','S'];
+  // Day-by-day grid — rotate letters to match the challenge's actual start day
+  const CEL_ALL_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  const celStartDow     = parseDate(cfg.startDate).getDay();
   const gridEl = document.getElementById('weekCelGrid');
   gridEl.innerHTML = '';
   for (let i = 0; i < 7; i++) {
-    const d   = weekStart + i;
-    const box = document.createElement('div');
+    const d      = weekStart + i;
+    const letter = CEL_ALL_LETTERS[(celStartDow + i) % 7];
+    const box    = document.createElement('div');
     box.className = `wcg-day ${!isDayFailed(d) ? 'done' : 'fail'}`;
-    box.innerHTML = `<span>${dayLetters[i]}</span><span>${!isDayFailed(d) ? '✓' : '✗'}</span>`;
+    box.innerHTML = `<span>${letter}</span><span>${!isDayFailed(d) ? '✓' : '✗'}</span>`;
     gridEl.appendChild(box);
   }
 
