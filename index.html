@@ -818,8 +818,192 @@
     line-height: 1.5;
   }
 
-  /* ── Share / modal ── */
-  .modal-overlay {
+  /* ══════════════════════════════════════════════════════
+     SETTINGS PANEL
+     Slides in as a full-screen overlay. Contains goal
+     editing, display preferences, and danger zone actions.
+  ══════════════════════════════════════════════════════ */
+
+  .settings-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 500;
+    overflow-y: auto;
+    animation: slideUp 0.25s ease-out;
+  }
+
+  .settings-overlay.open { display: block; }
+
+  @keyframes slideUp {
+    from { transform: translateY(40px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+
+  /* Sticky header with back button and title */
+  .settings-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 20px 16px 12px;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; background: var(--bg); z-index: 10;
+  }
+
+  .settings-back {
+    background: var(--card); border: 1px solid var(--border);
+    color: var(--text); width: 36px; height: 36px; border-radius: 50%;
+    font-size: 18px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+  }
+
+  .settings-back:focus { outline: none; }
+
+  .settings-panel-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px; letter-spacing: 3px; color: var(--accent);
+  }
+
+  /* Section label above each card */
+  .settings-section {
+    padding: 20px 16px 0;
+    max-width: 480px; margin: 0 auto;
+  }
+
+  .settings-section-label {
+    font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 10px; padding-left: 4px;
+  }
+
+  /* Card containing setting rows */
+  .settings-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 16px; overflow: hidden; margin-bottom: 8px;
+  }
+
+  /* Individual setting row */
+  .srow {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 16px; border-bottom: 1px solid var(--border);
+  }
+  .srow:last-child { border-bottom: none; }
+
+  .srow-icon  { font-size: 18px; flex-shrink: 0; width: 24px; text-align: center; }
+  .srow-info  { flex: 1; min-width: 0; }
+  .srow-label { font-size: 14px; font-weight: 500; }
+  .srow-sub   { font-size: 11px; color: var(--muted); margin-top: 2px; line-height: 1.4; }
+  .srow-sub.warn { color: #ffb347; }
+
+  /* Inline number input for goal rows */
+  .srow-input {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 6px 10px;
+    color: var(--text); font-family: 'DM Sans', sans-serif;
+    font-size: 14px; font-weight: 500; width: 80px; text-align: right;
+    outline: none; -webkit-appearance: none;
+    touch-action: manipulation;
+  }
+  .srow-input:focus { border-color: var(--accent); }
+  .srow-unit { font-size: 11px; color: var(--muted); margin-left: 4px; white-space: nowrap; }
+
+  /* Inline date input */
+  .srow-date {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 6px 10px;
+    color: var(--text); font-family: 'DM Sans', sans-serif;
+    font-size: 13px; outline: none; color-scheme: dark;
+    -webkit-appearance: none; touch-action: manipulation;
+  }
+  .srow-date:focus { border-color: var(--accent); }
+
+  /* oz / ml unit toggle buttons */
+  .unit-toggle { display: flex; gap: 6px; }
+  .unit-btn {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 6px; padding: 6px 12px;
+    font-size: 12px; color: var(--muted); cursor: pointer;
+    font-family: 'DM Sans', sans-serif; font-weight: 500;
+    touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+  .unit-btn.active { background: #1a2200; border-color: var(--accent); color: var(--accent); }
+
+  /* Water style selector (checkbox vs Owalas) */
+  .water-style-row {
+    padding: 14px 16px; border-bottom: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 10px;
+  }
+
+  .water-style-toggle { display: flex; gap: 8px; }
+
+  .wst-btn {
+    flex: 1; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 8px; text-align: center; cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+  }
+  .wst-btn.active { background: #1a2200; border-color: var(--accent); }
+  .wst-btn-icon  { font-size: 22px; display: block; margin-bottom: 4px; }
+  .wst-btn-label { font-size: 10px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+  .wst-btn.active .wst-btn-label { color: var(--accent); }
+
+  /* Owala count stepper */
+  .owala-stepper {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 12px;
+  }
+  .ost-btn {
+    width: 32px; height: 32px; background: var(--card);
+    border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text); font-size: 18px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+    transition: border-color 0.15s;
+  }
+  .ost-btn:hover { border-color: var(--accent); }
+
+  .ost-bubbles { display: flex; gap: 6px; flex: 1; justify-content: center; flex-wrap: wrap; }
+  .ost-bubble  {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #1a6abf; border: 2px solid #4aa8ff;
+    display: flex; align-items: center; justify-content: center; font-size: 12px;
+  }
+
+  .owala-hint { font-size: 11px; color: var(--muted); text-align: center; margin-top: 6px; }
+
+  /* Danger zone card */
+  .danger-settings-card {
+    background: var(--fail-bg); border: 1px solid var(--fail-border);
+    border-radius: 16px; overflow: hidden; margin-bottom: 8px;
+  }
+
+  .danger-srow {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 16px; border-bottom: 1px solid var(--fail-border);
+    cursor: pointer; touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .danger-srow:last-child { border-bottom: none; }
+  .danger-srow-icon  { font-size: 18px; flex-shrink: 0; width: 24px; text-align: center; }
+  .danger-srow-label { font-size: 14px; font-weight: 500; color: var(--fail-accent); flex: 1; }
+  .danger-srow-sub   { font-size: 11px; color: #5a2000; margin-top: 2px; }
+  .danger-chevron    { color: var(--fail-accent); font-size: 16px; flex-shrink: 0; opacity: 0.6; }
+
+  /* Sticky save button at the bottom */
+  .settings-save-bar {
+    position: sticky; bottom: 0; padding: 12px 16px;
+    background: var(--bg); border-top: 1px solid var(--border);
+    max-width: 480px; margin: 0 auto;
+  }
+
+  .btn-save-settings {
+    width: 100%; background: var(--accent); color: #000; border: none;
+    border-radius: 12px; padding: 15px;
+    font-family: 'Bebas Neue', sans-serif; font-size: 20px;
+    letter-spacing: 3px; cursor: pointer;
+    touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+  }
     display: none;
     position: fixed;
     inset: 0;
@@ -976,7 +1160,7 @@
   <!-- Top action buttons -->
   <div class="top-bar">
     <button class="icon-btn" onclick="openShare()">⬆ Share</button>
-    <button class="icon-btn" onclick="resetToSetup()">⚙ Settings</button>
+    <button class="icon-btn" onclick="openSettings()">⚙ Settings</button>
   </div>
 
   <!-- 2×2 stats grid -->
@@ -1022,6 +1206,178 @@
 
   <!-- Habit cards rendered by JS -->
   <div class="habits" id="habitsContainer"></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     SETTINGS PANEL
+     Full-screen overlay with goal editing, display prefs,
+     water tracker style, and danger zone. Does NOT reset
+     progress — only Reset Challenge does that.
+════════════════════════════════════════════════════════ -->
+<div class="settings-overlay" id="settingsOverlay">
+
+  <!-- Sticky header -->
+  <div class="settings-header">
+    <button class="settings-back" id="settingsBackBtn">‹</button>
+    <div class="settings-panel-title">SETTINGS</div>
+  </div>
+
+  <!-- GOALS -->
+  <div class="settings-section">
+    <div class="settings-section-label">Goals</div>
+    <div class="settings-card">
+
+      <div class="srow">
+        <div class="srow-icon">📅</div>
+        <div class="srow-info">
+          <div class="srow-label">Start Date</div>
+          <div class="srow-sub warn">⚠ Changing this may shift your logged progress</div>
+        </div>
+        <input type="date" class="srow-date" id="sStartDate" style="color-scheme:dark;" />
+      </div>
+
+      <div class="srow">
+        <div class="srow-icon">💧</div>
+        <div class="srow-info">
+          <div class="srow-label">Water Goal</div>
+          <div class="srow-sub">Daily target</div>
+        </div>
+        <input type="number" class="srow-input" id="sGoalWater" min="1" max="512" />
+        <span class="srow-unit" id="sWaterUnit">oz</span>
+      </div>
+
+      <div class="srow">
+        <div class="srow-icon">👟</div>
+        <div class="srow-info">
+          <div class="srow-label">Steps Goal</div>
+          <div class="srow-sub">Daily target</div>
+        </div>
+        <input type="number" class="srow-input" id="sGoalSteps" min="100" max="100000" step="500" />
+        <span class="srow-unit">steps</span>
+      </div>
+
+      <div class="srow">
+        <div class="srow-icon">📖</div>
+        <div class="srow-info">
+          <div class="srow-label">Pages Goal</div>
+          <div class="srow-sub">Daily target</div>
+        </div>
+        <input type="number" class="srow-input" id="sGoalPages" min="1" max="500" />
+        <span class="srow-unit">pages</span>
+      </div>
+
+      <div class="srow">
+        <div class="srow-icon">🏋️</div>
+        <div class="srow-info">
+          <div class="srow-label">Workouts per Week</div>
+          <div class="srow-sub">Weekly target</div>
+        </div>
+        <input type="number" class="srow-input" id="sGoalWorkouts" min="1" max="7" />
+        <span class="srow-unit">/ wk</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- WATER TRACKER STYLE -->
+  <div class="settings-section">
+    <div class="settings-section-label">Water Tracker Style</div>
+    <div class="settings-card">
+      <div class="water-style-row">
+
+        <!-- Checkbox vs Owala toggle -->
+        <div class="water-style-toggle">
+          <div class="wst-btn" id="wstCheckbox" onclick="setWaterStyleSetting('checkbox')">
+            <span class="wst-btn-icon">☑️</span>
+            <span class="wst-btn-label">Checkbox</span>
+          </div>
+          <div class="wst-btn" id="wstOwala" onclick="setWaterStyleSetting('owala')">
+            <span class="wst-btn-icon">💧</span>
+            <span class="wst-btn-label">Owalas</span>
+          </div>
+        </div>
+
+        <!-- Owala count stepper — only visible when Owala selected -->
+        <div id="owalaStepperSection" style="display:none;">
+          <div style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Owalas per day</div>
+          <div class="owala-stepper">
+            <button class="ost-btn" onclick="adjustOwalaCount(-1)">−</button>
+            <div class="ost-bubbles" id="owalaStepperBubbles"></div>
+            <button class="ost-btn" onclick="adjustOwalaCount(1)">+</button>
+          </div>
+          <div class="owala-hint" id="owalaStepperHint"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- DISPLAY -->
+  <div class="settings-section">
+    <div class="settings-section-label">Display</div>
+    <div class="settings-card">
+
+      <div class="srow">
+        <div class="srow-icon">⚠️</div>
+        <div class="srow-info">
+          <div class="srow-label">Show Penalty Days</div>
+          <div class="srow-sub">Display penalty counter in stats</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="sShowPenalty" />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="srow">
+        <div class="srow-icon">📏</div>
+        <div class="srow-info">
+          <div class="srow-label">Water Units</div>
+          <div class="srow-sub">How water amounts are displayed</div>
+        </div>
+        <div class="unit-toggle">
+          <div class="unit-btn" id="unitOz" onclick="setUnitsSetting('oz')">oz</div>
+          <div class="unit-btn" id="unitMl" onclick="setUnitsSetting('ml')">ml</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- DANGER ZONE -->
+  <div class="settings-section">
+    <div class="settings-section-label">Danger Zone</div>
+    <div class="danger-settings-card">
+
+      <div class="danger-srow" onclick="confirmResetStreak()">
+        <div class="danger-srow-icon">🔥</div>
+        <div class="srow-info">
+          <div class="danger-srow-label">Reset Streak</div>
+          <div class="danger-srow-sub">Clears your current streak only — progress stays</div>
+        </div>
+        <div class="danger-chevron">›</div>
+      </div>
+
+      <div class="danger-srow" onclick="confirmResetChallenge()">
+        <div class="danger-srow-icon">💀</div>
+        <div class="srow-info">
+          <div class="danger-srow-label">Reset Challenge</div>
+          <div class="danger-srow-sub">Wipes ALL progress and starts fresh</div>
+        </div>
+        <div class="danger-chevron">›</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Extra bottom padding so save bar doesn't cover last item -->
+  <div style="height: 80px;"></div>
+
+  <!-- Sticky save button -->
+  <div class="settings-save-bar">
+    <button class="btn-save-settings" onclick="saveSettings()">SAVE CHANGES</button>
+  </div>
+
 </div>
 
 <!-- ══════════════════════════════════════════════════════
@@ -1475,9 +1831,159 @@ function startChallenge() {
   showTracker();
 }
 
-/** Go back to the setup screen without losing progress */
-function resetToSetup() {
-  showSetup(); // no confirmation needed — progress is always preserved
+// ════════════════════════════════════════════════════════
+// SETTINGS PANEL
+// Opens as a full-screen overlay. Saves goals/display prefs
+// without touching progress data. Only Reset Challenge wipes data.
+// ════════════════════════════════════════════════════════
+
+/** Temporary state while settings panel is open */
+let settingsWaterStyle = 'checkbox';
+let settingsOwalaCount = 5;
+let settingsUnits      = 'oz';
+
+/**
+ * Open the settings panel and pre-fill all fields with current cfg values.
+ * Progress data is never touched until Save is tapped.
+ */
+function openSettings() {
+  // Pre-fill goal fields
+  document.getElementById('sStartDate').value    = cfg.startDate;
+  document.getElementById('sGoalWater').value    = cfg.goalWater;
+  document.getElementById('sGoalSteps').value    = cfg.goalSteps;
+  document.getElementById('sGoalPages').value    = cfg.goalPages;
+  document.getElementById('sGoalWorkouts').value = cfg.goalWorkouts;
+
+  // Pre-fill display toggles
+  document.getElementById('sShowPenalty').checked = cfg.showPenalty !== false; // default true
+
+  // Pre-fill water style
+  settingsWaterStyle = cfg.waterStyle || 'checkbox';
+  settingsOwalaCount = cfg.owalaCount || 5;
+  settingsUnits      = cfg.waterUnits || 'oz';
+
+  setWaterStyleSetting(settingsWaterStyle, true); // true = silent (no re-render)
+  setUnitsSetting(settingsUnits, true);
+  updateOwalaStepperBubbles();
+
+  // Show the overlay
+  document.getElementById('settingsOverlay').classList.add('open');
+}
+
+/** Close the settings panel without saving */
+function closeSettings() {
+  document.getElementById('settingsOverlay').classList.remove('open');
+}
+
+/**
+ * Save all settings changes to cfg and persist to localStorage.
+ * Progress data (data object) is NEVER modified here.
+ */
+function saveSettings() {
+  const newStartDate = document.getElementById('sStartDate').value;
+  if (!newStartDate) { alert('Please set a valid start date.'); return; }
+
+  // Update cfg with new values — data is untouched
+  cfg.startDate    = newStartDate;
+  cfg.goalWater    = parseInt(document.getElementById('sGoalWater').value)    || cfg.goalWater;
+  cfg.goalSteps    = parseInt(document.getElementById('sGoalSteps').value)    || cfg.goalSteps;
+  cfg.goalPages    = parseInt(document.getElementById('sGoalPages').value)    || cfg.goalPages;
+  cfg.goalWorkouts = parseInt(document.getElementById('sGoalWorkouts').value) || cfg.goalWorkouts;
+  cfg.showPenalty  = document.getElementById('sShowPenalty').checked;
+  cfg.waterStyle   = settingsWaterStyle;
+  cfg.owalaCount   = settingsOwalaCount;
+  cfg.waterUnits   = settingsUnits;
+
+  saveStore();
+  closeSettings();
+  render(); // re-render tracker with updated settings
+}
+
+/**
+ * Set the water tracker style (checkbox or owala) in the settings panel.
+ * @param {string} style - 'checkbox' or 'owala'
+ * @param {boolean} silent - if true, skip bubble re-render (used on init)
+ */
+function setWaterStyleSetting(style, silent = false) {
+  settingsWaterStyle = style;
+  document.getElementById('wstCheckbox').classList.toggle('active', style === 'checkbox');
+  document.getElementById('wstOwala').classList.toggle('active', style === 'owala');
+  document.getElementById('owalaStepperSection').style.display = style === 'owala' ? 'block' : 'none';
+  if (!silent) updateOwalaStepperBubbles();
+}
+
+/**
+ * Adjust the Owala count in the stepper by delta (+1 or -1).
+ * Clamped between 1 and 10.
+ */
+function adjustOwalaCount(delta) {
+  settingsOwalaCount = Math.max(1, Math.min(10, settingsOwalaCount + delta));
+  updateOwalaStepperBubbles();
+}
+
+/** Re-render the Owala bubble preview in the stepper */
+function updateOwalaStepperBubbles() {
+  const el = document.getElementById('owalaStepperBubbles');
+  if (!el) return;
+  el.innerHTML = '';
+  for (let i = 0; i < settingsOwalaCount; i++) {
+    const b = document.createElement('div');
+    b.className    = 'ost-bubble';
+    b.textContent  = '💧';
+    el.appendChild(b);
+  }
+  const hint = document.getElementById('owalaStepperHint');
+  if (hint) hint.textContent = `${settingsOwalaCount} Owala${settingsOwalaCount !== 1 ? 's' : ''} per day`;
+}
+
+/**
+ * Set the water display units (oz or ml).
+ * @param {string} unit - 'oz' or 'ml'
+ * @param {boolean} silent - skip DOM update if true
+ */
+function setUnitsSetting(unit, silent = false) {
+  settingsUnits = unit;
+  if (!silent) {
+    document.getElementById('unitOz').classList.toggle('active', unit === 'oz');
+    document.getElementById('unitMl').classList.toggle('active', unit === 'ml');
+    document.getElementById('sWaterUnit').textContent = unit;
+  }
+}
+
+/**
+ * Prompt to reset only the streak counter.
+ * Clears the celebrationShownForDay flag so the day celebration
+ * can fire again, and resets week celebration history.
+ */
+function confirmResetStreak() {
+  if (!confirm('Reset your current streak? All other progress will be kept.')) return;
+  // Clear week celebration history so they can fire again
+  localStorage.removeItem(WEEK_CEL_KEY);
+  celebrationShownForDay = -1;
+  saveStore();
+  closeSettings();
+  render();
+}
+
+/**
+ * Prompt to fully reset the challenge.
+ * Wipes ALL progress data and returns to the start screen.
+ * Uses a double-confirm because this is irreversible.
+ */
+function confirmResetChallenge() {
+  if (!confirm('Reset your ENTIRE challenge? This cannot be undone.')) return;
+  if (!confirm('Are you sure? All progress, streaks, and habit data will be permanently deleted.')) return;
+
+  // Wipe all data
+  data = {};
+  cfg  = null;
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(WEEK_CEL_KEY);
+  localStorage.removeItem(ADMIN_KEY);
+  celebrationShownForDay = -1;
+
+  closeSettings();
+  showSetup();
 }
 
 /** Show the setup screen and pre-fill with existing config if returning user */
@@ -1539,6 +2045,9 @@ function render() {
   document.getElementById('statGoal').textContent    = totalGoal;
   document.getElementById('statStreak').textContent  = streak;
   document.getElementById('statPenalty').textContent = penalty;
+  // Hide or show the penalty stat box based on display settings
+  document.getElementById('statPenalty').closest('.stat-box').style.display =
+    cfg.showPenalty !== false ? '' : 'none';
 
   // ── Day label ──
   const penaltyTag = isPenalty ? `<div class="penalty-tag">+2 Penalty Day</div>` : '';
@@ -1753,32 +2262,41 @@ function render() {
   ));
 
   // ── W — Water ──
-  // Admin gets Owala bubble UI; everyone else gets a regular checkbox.
-  if (isAdmin()) {
-    const OWALA_COUNT = 5; // 5 × 30oz = 150oz ≈ 1 gallon
+  // Shows Owala bubble UI if cfg.waterStyle === 'owala', otherwise checkbox.
+  // Admin users also get Owala UI by default (isAdmin() overrides).
+  // The owalaCount comes from cfg.owalaCount (set in Settings).
+  const useOwalaUI  = isAdmin() || cfg.waterStyle === 'owala';
+  const OWALA_COUNT = useOwalaUI ? (cfg.owalaCount || 5) : 0;
+
+  if (useOwalaUI) {
     const owalaFilled = getDayChecks(currentDay).owala || 0;
     const allDone     = owalaFilled >= OWALA_COUNT;
+
+    // Compute oz per Owala for the subtitle
+    const ozPerOwala  = Math.round(cfg.goalWater / OWALA_COUNT);
+    const totalOz     = OWALA_COUNT * ozPerOwala;
+    const displayUnit = cfg.waterUnits === 'ml'
+      ? `${Math.round(owalaFilled * ozPerOwala * 29.5735)}/${Math.round(totalOz * 29.5735)} ml`
+      : `${owalaFilled * ozPerOwala}/${totalOz} oz`;
 
     const owalaCard = document.createElement('div');
     owalaCard.className = 'owala-row' + (allDone ? ' all-done' : '');
     owalaCard.innerHTML = `
       <div class="owala-top">
-        <div class="letter" id="wLetter"
-          style="${allDone ? 'color:var(--accent);border-color:var(--accent)' : ''};cursor:pointer;">W</div>
+        <div class="letter"
+          style="${allDone ? 'color:var(--accent);border-color:var(--accent)' : ''}">W</div>
         <div class="habit-info">
           <div class="habit-name"
             style="${allDone ? 'color:var(--accent-dim);text-decoration:line-through;text-decoration-color:#4a6600' : ''}">
             Water
           </div>
           <div class="habit-desc" style="${allDone ? 'color:#3a5200' : ''}">
-            ${owalaFilled}/${OWALA_COUNT} Owalas · ${owalaFilled * 30}/${OWALA_COUNT * 30} oz
+            ${owalaFilled}/${OWALA_COUNT} Owalas · ${displayUnit}
           </div>
         </div>
       </div>
       <div class="owala-bubbles" id="OwalasBubbles"></div>`;
     container.appendChild(owalaCard);
-
-    // The W letter no longer triggers admin mode — use the SWEEPS logo instead
 
     // Sync the boolean water check with owala completion
     if (!isFuture) setDayCheck(currentDay, 'water', allDone);
@@ -1793,7 +2311,7 @@ function render() {
       if (!isFuture) {
         bubble.onclick = () => {
           const cur  = getDayChecks(currentDay).owala || 0;
-          // Tapping a filled bubble un-fills it; tapping an empty one fills up to it
+          // Tapping filled = un-fill; tapping empty = fill up to that point
           const next = i <= cur ? i - 1 : i;
           if (!data[`day_${currentDay}`]) data[`day_${currentDay}`] = {};
           data[`day_${currentDay}`].owala = next;
@@ -1807,9 +2325,12 @@ function render() {
       bubblesContainer.appendChild(bubble);
     }
   } else {
-    // Non-admin: standard water checkbox
+    // Standard checkbox water card
+    const waterDesc = cfg.waterUnits === 'ml'
+      ? `${Math.round(cfg.goalWater * 29.5735)} ml / day`
+      : `${cfg.goalWater} oz / day`;
     const regularCard = makeHabitCard(
-      { id: 'water', letter: 'W', name: 'Water', desc: `${cfg.goalWater} oz / day` },
+      { id: 'water', letter: 'W', name: 'Water', desc: waterDesc },
       !!checks.water, isFuture
     );
     container.appendChild(regularCard);
@@ -2482,6 +3003,13 @@ document.getElementById('nextBtn').addEventListener('click', (e) => {
   // Attach triple-tap to the SWEEPS logo to toggle admin/Owala mode.
   // Intentionally invisible — tap logo 3 times quickly to unlock.
   document.querySelector('.title').addEventListener('click', handleWTripleTap);
+
+  // Settings back button — closes panel without saving
+  document.getElementById('settingsBackBtn').addEventListener('click', (e) => {
+    e.preventDefault();
+    e.target.blur();
+    closeSettings();
+  });
 
   // Default the start date picker to today
   const today    = new Date();
