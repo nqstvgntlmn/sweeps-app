@@ -2015,6 +2015,9 @@ function showTracker() {
   // Start on today's day number, clamped to the total goal
   currentDay = Math.min(getTodayDayNum(), getTotalGoal(getTodayDayNum()));
   render();
+
+  // Check for week celebration once on load — not on every tap
+  checkForWeekCelebration();
 }
 
 
@@ -2540,9 +2543,7 @@ function checkForCelebration() {
     celebrationShownForDay = todayNum;
     showCelebration(todayNum);
   }
-
-  // Also check if we just crossed into a new week and should show week recap
-  checkForWeekCelebration();
+  // Note: week celebration is checked separately on app load only (in showTracker)
 }
 
 /**
