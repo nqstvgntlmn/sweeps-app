@@ -2576,12 +2576,14 @@ function closeCelebration() {
 // ════════════════════════════════════════════════════════
 
 /** localStorage key tracking which week celebrations have been shown */
-const WEEK_CEL_KEY = 'sweeps_week_celebrations';
+const WEEK_CEL_KEY = 'sweeps_week_cel';
 
 /** Returns a Set of week numbers already celebrated */
 function getCelebratedWeeks() {
-  try { return new Set(JSON.parse(localStorage.getItem(WEEK_CEL_KEY)) || []); }
-  catch { return new Set(); }
+  try {
+    const stored = localStorage.getItem(WEEK_CEL_KEY);
+    return new Set(stored ? JSON.parse(stored) : []);
+  } catch { return new Set(); }
 }
 
 /** Mark a week number as celebrated so we never show it again */
@@ -2593,26 +2595,32 @@ function markWeekCelebrated(w) {
 
 /**
  * Check whether we should trigger the week celebration.
- * Fires on day 1 of a new week if the previous week's workouts were done
- * and we haven't shown that week's celebration yet.
+ * Fires on the first day of a new week if the previous week's
+ * workouts were completed and this week hasn't been celebrated yet.
  */
 function checkForWeekCelebration() {
   const todayNum  = getTodayDayNum();
   const weekNum   = getWeekNum(todayNum);
   const dayInWeek = ((todayNum - 1) % 7) + 1;
 
-  // Only fire on the first day of a new week, and only if there's a previous week
+  // Only fire on day 1 of a new week, and only if there's a previous week
   if (dayInWeek !== 1 || weekNum <= 1) return;
 
-  const prevWeek   = weekNum - 1;
-  if (getCelebratedWeeks().has(prevWeek)) return; // already shown
+  const prevWeek = weekNum - 1;
 
-  // Previous week must have hit the workout goal
+  // Check BEFORE marking — if already celebrated, bail out
+  const celebrated = getCelebratedWeeks();
+  if (celebrated.has(prevWeek)) return;
+
+  // Mark IMMEDIATELY before showing — prevents re-show if app reloads
+  markWeekCelebrated(prevWeek);
+
+  // Previous week must have hit the workout goal to show celebration
   const prevWorkouts = isAdmin() ? getWeekWorkoutsAdmin(prevWeek) : getWeekWorkouts(prevWeek);
   if (prevWorkouts < cfg.goalWorkouts) return;
 
-  showWeekCelebration(prevWeek);
-  markWeekCelebrated(prevWeek);
+  // Small delay so the tracker renders first
+  setTimeout(() => showWeekCelebration(prevWeek), 800);
 }
 
 /**
