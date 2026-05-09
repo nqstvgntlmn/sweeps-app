@@ -1332,6 +1332,8 @@
   <button class="btn-start" onclick="startChallenge()">START SWEEPS</button>
   <!-- Back button — only shown when returning from Settings, not on first launch -->
   <button class="btn-back" id="backBtn" style="display:none;" onclick="showTracker()">← Back</button>
+  <!-- Recovery button — shown if saved data is detected but cfg failed to load -->
+  <button class="btn-back" id="recoverBtn" style="display:none;border-color:#ffb347;color:#ffb347;" onclick="recoverData()">⚠ Recover My Progress</button>
 </div>
 
 <!-- ══════════════════════════════════════════════════════
@@ -2322,6 +2324,22 @@ function confirmResetChallenge() {
 
   closeSettings();
   showSetup();
+}
+
+/**
+ * Emergency recovery: re-load cfg and data from localStorage and jump to tracker.
+ * Called if the user sees the setup screen but their data is still saved.
+ */
+function recoverData() {
+  const stored = loadStore();
+  if (stored && stored.cfg) {
+    cfg  = stored.cfg;
+    data = stored.data || {};
+    saveStore(); // re-save to confirm
+    showTracker();
+  } else {
+    alert('No saved data found. You may need to start fresh.');
+  }
 }
 
 /** Show the setup screen and pre-fill with existing config if returning user */
@@ -3433,7 +3451,23 @@ document.getElementById('nextBtn').addEventListener('click', (e) => {
     showTracker();
   } else {
     // Brand new user — show setup screen
-    showSetup();
+    // But first: check if there's orphaned saved data (SW reload race condition)
+    const rawStored = loadStore();
+    if (rawStored && rawStored.cfg) {
+      // Data is there — just restore it directly
+      cfg  = rawStored.cfg;
+      data = rawStored.data || {};
+      showTracker();
+    } else {
+      showSetup();
+      // Show recover button only if localStorage has ANY sweeps data
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw && raw.length > 10) {
+          document.getElementById('recoverBtn').style.display = 'block';
+        }
+      } catch(e) {}
+    }
   }
 })();
 </script>
