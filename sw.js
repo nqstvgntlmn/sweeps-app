@@ -1,4 +1,4 @@
-const CACHE = 'sweeps-v18';
+const CACHE = 'sweeps-v19';
 const ASSETS = [
   '/',
   '/index.html',
@@ -51,4 +51,3 @@ self.addEventListener('fetch', e => {
       })
   );
 });
-
