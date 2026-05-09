@@ -1474,6 +1474,15 @@
           </div>
         </div>
 
+        <!-- oz/ml unit toggle — only shown when Checkbox style is active -->
+        <div id="checkboxUnitSection" style="display:none;">
+          <div style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Display units</div>
+          <div class="unit-toggle">
+            <div class="unit-btn" id="unitOz" onclick="setUnitsSetting('oz')">oz</div>
+            <div class="unit-btn" id="unitMl" onclick="setUnitsSetting('ml')">ml</div>
+          </div>
+        </div>
+
         <!-- Owala count stepper — only visible when Owala selected -->
         <div id="owalaStepperSection" style="display:none;">
           <div style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Owalas per day</div>
@@ -1504,19 +1513,6 @@
           <input type="checkbox" id="sShowPenalty" />
           <span class="toggle-slider"></span>
         </label>
-      </div>
-
-      <div class="srow">
-        <div class="srow-icon">📏</div>
-        <div class="srow-info">
-          <div class="srow-label">Water Units</div>
-          <div class="srow-sub">How water amounts are displayed</div>
-        </div>
-        <div class="unit-toggle">
-          <div class="unit-btn" id="unitOz" onclick="setUnitsSetting('oz')">oz</div>
-          <div class="unit-btn" id="unitMl" onclick="setUnitsSetting('ml')">ml</div>
-          <div class="unit-btn" id="unitOwala" onclick="setUnitsSetting('owala')">💧</div>
-        </div>
       </div>
 
     </div>
@@ -2055,11 +2051,10 @@ function openSettings() {
   settingsUnits      = cfg.waterUnits || 'oz';
 
   setWaterStyleSetting(settingsWaterStyle, true);
-  // Manually sync unit buttons since setUnitsSetting silent=true skips DOM
+  // Manually sync unit buttons (silent init skips DOM update)
   document.getElementById('unitOz').classList.toggle('active', settingsUnits === 'oz');
   document.getElementById('unitMl').classList.toggle('active', settingsUnits === 'ml');
-  document.getElementById('unitOwala').classList.toggle('active', settingsUnits === 'owala');
-  document.getElementById('sWaterUnit').textContent = settingsUnits === 'owala' ? 'Owalas' : settingsUnits;
+  document.getElementById('sWaterUnit').textContent = settingsUnits;
   updateOwalaStepperBubbles();
 
   // Show the overlay
@@ -2127,7 +2122,8 @@ function setWaterStyleSetting(style, silent = false) {
   settingsWaterStyle = style;
   document.getElementById('wstCheckbox').classList.toggle('active', style === 'checkbox');
   document.getElementById('wstOwala').classList.toggle('active', style === 'owala');
-  document.getElementById('owalaStepperSection').style.display = style === 'owala' ? 'block' : 'none';
+  document.getElementById('owalaStepperSection').style.display  = style === 'owala'    ? 'block' : 'none';
+  document.getElementById('checkboxUnitSection').style.display  = style === 'checkbox' ? 'block' : 'none';
   if (!silent) updateOwalaStepperBubbles();
 }
 
@@ -2165,8 +2161,7 @@ function setUnitsSetting(unit, silent = false) {
   if (!silent) {
     document.getElementById('unitOz').classList.toggle('active', unit === 'oz');
     document.getElementById('unitMl').classList.toggle('active', unit === 'ml');
-    document.getElementById('unitOwala').classList.toggle('active', unit === 'owala');
-    document.getElementById('sWaterUnit').textContent = unit === 'owala' ? 'Owalas' : unit;
+    document.getElementById('sWaterUnit').textContent = unit;
   }
 }
 
