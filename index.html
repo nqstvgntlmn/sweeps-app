@@ -1227,10 +1227,13 @@
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
     flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 600; color: #444;
   }
   .squat-bubble.filled {
     background: var(--accent);
     border-color: var(--accent);
+    color: #000;
   }
   .squat-bubble.locked { cursor: default; }
 
@@ -2927,7 +2930,7 @@ function render() {
       const rowBubbles = Array.from({ length: 5 }, (_, i) => {
         const idx    = rowStart + i;
         const filled = squatCount >= (idx + 1) * 10;
-        return `<div class="squat-bubble${filled ? ' filled' : ''}${isFuture ? ' locked' : ''}" data-idx="${idx}"></div>`;
+        return `<div class="squat-bubble${filled ? ' filled' : ''}${isFuture ? ' locked' : ''}" data-idx="${idx}">${idx + 1}</div>`;
       }).join('');
       return `<div class="squat-row${rowIdx === 1 ? ' offset' : ''}">${rowBubbles}</div>`;
     }).join('');
