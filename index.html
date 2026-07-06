@@ -1203,15 +1203,22 @@
   .opt-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
   .optional-card.done .opt-desc { color: #3a5200; }
 
-  /* Squat bubble strip — 10 bubbles, tap to fill */
+  /* Squat bubble grid — 2 rows of 5, bottom row offset by half a bubble */
   .squat-bubbles {
     display: flex;
-    gap: 5px;
-    align-items: center;
+    flex-direction: column;
+    gap: 6px;
     flex-shrink: 0;
   }
+  .squat-row {
+    display: flex;
+    gap: 10px;
+  }
+  .squat-row.offset {
+    margin-left: 17px;
+  }
   .squat-bubble {
-    width: 20px; height: 20px;
+    width: 24px; height: 24px;
     border-radius: 50%;
     border: 1.5px solid var(--border);
     background: transparent;
@@ -2915,9 +2922,14 @@ function render() {
     const squatCard  = document.createElement('div');
     squatCard.className = 'optional-card' + (squatDone ? ' done' : '') + (isFuture ? ' locked' : '');
 
-    const bubblesHtml = Array.from({ length: 10 }, (_, i) => {
-      const filled = squatCount >= (i + 1) * 10;
-      return `<div class="squat-bubble${filled ? ' filled' : ''}${isFuture ? ' locked' : ''}" data-idx="${i}"></div>`;
+    // Build 2 rows of 5 bubbles — top row indices 0–4, bottom row 5–9 (offset)
+    const bubblesHtml = [0, 5].map((rowStart, rowIdx) => {
+      const rowBubbles = Array.from({ length: 5 }, (_, i) => {
+        const idx    = rowStart + i;
+        const filled = squatCount >= (idx + 1) * 10;
+        return `<div class="squat-bubble${filled ? ' filled' : ''}${isFuture ? ' locked' : ''}" data-idx="${idx}"></div>`;
+      }).join('');
+      return `<div class="squat-row${rowIdx === 1 ? ' offset' : ''}">${rowBubbles}</div>`;
     }).join('');
 
     squatCard.innerHTML = `
