@@ -1600,21 +1600,39 @@
           <div class="srow-sub">Adds a yes/no card below the main habits</div>
         </div>
         <label class="toggle">
-          <input type="checkbox" id="sOptMeditation" />
+          <input type="checkbox" id="sOptMeditation" onchange="onOptHabitToggle('meditation')" />
           <span class="toggle-slider"></span>
         </label>
       </div>
+      <!-- Start date sub-row — only visible when meditation is enabled -->
+      <div id="meditationDateRow" style="display:none;" class="srow" style="background:#0f0f0f;">
+        <div class="srow-icon" style="font-size:12px;">📅</div>
+        <div class="srow-info">
+          <div class="srow-label" style="font-size:12px;">Track from</div>
+          <div class="srow-sub">Cards hidden before this date</div>
+        </div>
+        <input type="date" class="srow-date" id="sOptMeditationStart" style="color-scheme:dark;" />
+      </div>
 
       <div class="srow">
-        <div class="srow-icon">🏋️</div>
+        <div class="srow-icon">🦵</div>
         <div class="srow-info">
           <div class="srow-label">100 Squats</div>
           <div class="srow-sub">10 bubbles · tap to track sets of 10</div>
         </div>
         <label class="toggle">
-          <input type="checkbox" id="sOptSquats" />
+          <input type="checkbox" id="sOptSquats" onchange="onOptHabitToggle('squats')" />
           <span class="toggle-slider"></span>
         </label>
+      </div>
+      <!-- Start date sub-row — only visible when squats is enabled -->
+      <div id="squatsDateRow" style="display:none;" class="srow" style="background:#0f0f0f;">
+        <div class="srow-icon" style="font-size:12px;">📅</div>
+        <div class="srow-info">
+          <div class="srow-label" style="font-size:12px;">Track from</div>
+          <div class="srow-sub">Cards hidden before this date</div>
+        </div>
+        <input type="date" class="srow-date" id="sOptSquatsStart" style="color-scheme:dark;" />
       </div>
 
     </div>
@@ -2137,9 +2155,13 @@ function openSettings() {
   document.getElementById('sDietCustomName').value = cfg.dietCustomName || '';
   onDietTypeChange(); // show/hide correct sub-rows
 
-  // Pre-fill optional habits toggles (safe default: off)
+  // Pre-fill optional habits toggles and start dates (safe defaults: off)
   document.getElementById('sOptMeditation').checked = !!(cfg.optMeditation);
   document.getElementById('sOptSquats').checked     = !!(cfg.optSquats);
+  document.getElementById('sOptMeditationStart').value = cfg.optMeditationStart || '';
+  document.getElementById('sOptSquatsStart').value     = cfg.optSquatsStart     || '';
+  document.getElementById('meditationDateRow').style.display = cfg.optMeditation ? 'flex' : 'none';
+  document.getElementById('squatsDateRow').style.display     = cfg.optSquats     ? 'flex' : 'none';
 
   // Pre-fill goal fields
   document.getElementById('sStartDate').value    = cfg.startDate;
@@ -2199,13 +2221,33 @@ function saveSettings() {
   cfg.dietProtein    = parseInt(document.getElementById('sDietProtein').value)    || 150;
   cfg.dietIFWindow   = document.getElementById('sDietIFWindow').value;
   cfg.dietCustomName = document.getElementById('sDietCustomName').value || '';
-  // Optional habits — cfg flags only, never touch data
-  cfg.optMeditation = document.getElementById('sOptMeditation').checked;
-  cfg.optSquats     = document.getElementById('sOptSquats').checked;
+  // Optional habits — cfg flags and start dates only, never touch data
+  cfg.optMeditation      = document.getElementById('sOptMeditation').checked;
+  cfg.optSquats          = document.getElementById('sOptSquats').checked;
+  cfg.optMeditationStart = document.getElementById('sOptMeditationStart').value || null;
+  cfg.optSquatsStart     = document.getElementById('sOptSquatsStart').value     || null;
 
   saveStore();
   closeSettings();
   render(); // re-render tracker with updated settings
+}
+
+/**
+ * Show/hide the start date picker when an optional habit is toggled.
+ * @param {string} habit - 'meditation' or 'squats'
+ */
+function onOptHabitToggle(habit) {
+  const isOn    = document.getElementById(`sOpt${habit.charAt(0).toUpperCase() + habit.slice(1)}`).checked;
+  const dateRow = document.getElementById(`${habit}DateRow`);
+  dateRow.style.display = isOn ? 'flex' : 'none';
+  // Default to today if no date set yet
+  if (isOn) {
+    const input = document.getElementById(`sOpt${habit.charAt(0).toUpperCase() + habit.slice(1)}Start`);
+    if (!input.value) {
+      const today = new Date();
+      input.value = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+    }
+  }
 }
 
 /** Adjust challenge length stepper (steps by 5, clamped 10–365) */
@@ -2833,7 +2875,11 @@ function render() {
   ));
 
   // ── Optional: Meditation ──
-  if (cfg.optMeditation) {
+  // Only show if enabled AND current day is on/after the meditation start date
+  const medStartDay = cfg.optMeditationStart
+    ? Math.max(1, Math.floor((parseDate(cfg.optMeditationStart) - parseDate(cfg.startDate)) / 86400000) + 1)
+    : 1;
+  if (cfg.optMeditation && currentDay >= medStartDay) {
     const medDone = !!checks.meditation;
     const medCard = document.createElement('div');
     medCard.className = 'optional-card' + (medDone ? ' done' : '') + (isFuture ? ' locked' : '');
@@ -2859,20 +2905,23 @@ function render() {
   }
 
   // ── Optional: 100 Squats ──
-  if (cfg.optSquats) {
-    const squatCount = checks.squats || 0; // stored as number 0–100
+  // Only show if enabled AND current day is on/after the squats start date
+  const squatStartDay = cfg.optSquatsStart
+    ? Math.max(1, Math.floor((parseDate(cfg.optSquatsStart) - parseDate(cfg.startDate)) / 86400000) + 1)
+    : 1;
+  if (cfg.optSquats && currentDay >= squatStartDay) {
+    const squatCount = checks.squats || 0;
     const squatDone  = squatCount >= 100;
     const squatCard  = document.createElement('div');
     squatCard.className = 'optional-card' + (squatDone ? ' done' : '') + (isFuture ? ' locked' : '');
 
-    // Build 10 bubbles
     const bubblesHtml = Array.from({ length: 10 }, (_, i) => {
       const filled = squatCount >= (i + 1) * 10;
       return `<div class="squat-bubble${filled ? ' filled' : ''}${isFuture ? ' locked' : ''}" data-idx="${i}"></div>`;
     }).join('');
 
     squatCard.innerHTML = `
-      <div class="opt-icon">🏋️</div>
+      <div class="opt-icon">🦵</div>
       <div class="opt-info">
         <div class="opt-name">100 Squats</div>
         <div class="opt-desc">${squatCount} / 100 reps</div>
