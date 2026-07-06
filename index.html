@@ -1161,7 +1161,73 @@
   .diet-sub-input:focus { border-color: var(--accent); }
   .diet-sub-unit { font-size: 11px; color: var(--muted); white-space: nowrap; }
 
-  /* ── Confetti particles ── */
+  /* ── Optional habit cards (Meditation, Squats) ── */
+  .optional-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+    transition: background 0.2s, border-color 0.2s;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .optional-card.done {
+    background: var(--done-bg);
+    border-color: var(--done-border);
+  }
+  .optional-card.locked { opacity: 0.4; cursor: default; }
+
+  .opt-icon {
+    font-size: 22px;
+    width: 36px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .opt-info { flex: 1; min-width: 0; }
+  .opt-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: 0.3px;
+  }
+  .optional-card.done .opt-name {
+    color: var(--accent-dim);
+    text-decoration: line-through;
+    text-decoration-color: #4a6600;
+  }
+  .opt-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .optional-card.done .opt-desc { color: #3a5200; }
+
+  /* Squat bubble strip — 10 bubbles, tap to fill */
+  .squat-bubbles {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .squat-bubble {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    flex-shrink: 0;
+  }
+  .squat-bubble.filled {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .squat-bubble.locked { cursor: default; }
+
+  /* Confetti particles ── */
   .confetti { position: fixed; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; z-index: 100; overflow: hidden; }
 
   .confetti-piece {
@@ -1474,15 +1540,6 @@
           </div>
         </div>
 
-        <!-- oz/ml unit toggle — only shown when Checkbox style is active -->
-        <div id="checkboxUnitSection" style="display:none;">
-          <div style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Display units</div>
-          <div class="unit-toggle">
-            <div class="unit-btn" id="unitOz" onclick="setUnitsSetting('oz')">oz</div>
-            <div class="unit-btn" id="unitMl" onclick="setUnitsSetting('ml')">ml</div>
-          </div>
-        </div>
-
         <!-- Owala count stepper — only visible when Owala selected -->
         <div id="owalaStepperSection" style="display:none;">
           <div style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Owalas per day</div>
@@ -1511,6 +1568,51 @@
         </div>
         <label class="toggle">
           <input type="checkbox" id="sShowPenalty" />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="srow">
+        <div class="srow-icon">📏</div>
+        <div class="srow-info">
+          <div class="srow-label">Water Units</div>
+          <div class="srow-sub">How water amounts are displayed</div>
+        </div>
+        <div class="unit-toggle">
+          <div class="unit-btn" id="unitOz" onclick="setUnitsSetting('oz')">oz</div>
+          <div class="unit-btn" id="unitMl" onclick="setUnitsSetting('ml')">ml</div>
+          <div class="unit-btn" id="unitOwala" onclick="setUnitsSetting('owala')">💧</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- OPTIONAL HABITS -->
+  <div class="settings-section">
+    <div class="settings-section-label">Optional Habits</div>
+    <div class="settings-card">
+
+      <div class="srow">
+        <div class="srow-icon">🧘</div>
+        <div class="srow-info">
+          <div class="srow-label">Daily Meditation</div>
+          <div class="srow-sub">Adds a yes/no card below the main habits</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="sOptMeditation" />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="srow">
+        <div class="srow-icon">🏋️</div>
+        <div class="srow-info">
+          <div class="srow-label">100 Squats</div>
+          <div class="srow-sub">10 bubbles · tap to track sets of 10</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="sOptSquats" />
           <span class="toggle-slider"></span>
         </label>
       </div>
@@ -2035,6 +2137,10 @@ function openSettings() {
   document.getElementById('sDietCustomName').value = cfg.dietCustomName || '';
   onDietTypeChange(); // show/hide correct sub-rows
 
+  // Pre-fill optional habits toggles (safe default: off)
+  document.getElementById('sOptMeditation').checked = !!(cfg.optMeditation);
+  document.getElementById('sOptSquats').checked     = !!(cfg.optSquats);
+
   // Pre-fill goal fields
   document.getElementById('sStartDate').value    = cfg.startDate;
   document.getElementById('sGoalWater').value    = cfg.goalWater;
@@ -2051,10 +2157,11 @@ function openSettings() {
   settingsUnits      = cfg.waterUnits || 'oz';
 
   setWaterStyleSetting(settingsWaterStyle, true);
-  // Manually sync unit buttons (silent init skips DOM update)
+  // Manually sync unit buttons since setUnitsSetting silent=true skips DOM
   document.getElementById('unitOz').classList.toggle('active', settingsUnits === 'oz');
   document.getElementById('unitMl').classList.toggle('active', settingsUnits === 'ml');
-  document.getElementById('sWaterUnit').textContent = settingsUnits;
+  document.getElementById('unitOwala').classList.toggle('active', settingsUnits === 'owala');
+  document.getElementById('sWaterUnit').textContent = settingsUnits === 'owala' ? 'Owalas' : settingsUnits;
   updateOwalaStepperBubbles();
 
   // Show the overlay
@@ -2092,6 +2199,9 @@ function saveSettings() {
   cfg.dietProtein    = parseInt(document.getElementById('sDietProtein').value)    || 150;
   cfg.dietIFWindow   = document.getElementById('sDietIFWindow').value;
   cfg.dietCustomName = document.getElementById('sDietCustomName').value || '';
+  // Optional habits — cfg flags only, never touch data
+  cfg.optMeditation = document.getElementById('sOptMeditation').checked;
+  cfg.optSquats     = document.getElementById('sOptSquats').checked;
 
   saveStore();
   closeSettings();
@@ -2122,8 +2232,7 @@ function setWaterStyleSetting(style, silent = false) {
   settingsWaterStyle = style;
   document.getElementById('wstCheckbox').classList.toggle('active', style === 'checkbox');
   document.getElementById('wstOwala').classList.toggle('active', style === 'owala');
-  document.getElementById('owalaStepperSection').style.display  = style === 'owala'    ? 'block' : 'none';
-  document.getElementById('checkboxUnitSection').style.display  = style === 'checkbox' ? 'block' : 'none';
+  document.getElementById('owalaStepperSection').style.display = style === 'owala' ? 'block' : 'none';
   if (!silent) updateOwalaStepperBubbles();
 }
 
@@ -2161,7 +2270,8 @@ function setUnitsSetting(unit, silent = false) {
   if (!silent) {
     document.getElementById('unitOz').classList.toggle('active', unit === 'oz');
     document.getElementById('unitMl').classList.toggle('active', unit === 'ml');
-    document.getElementById('sWaterUnit').textContent = unit;
+    document.getElementById('unitOwala').classList.toggle('active', unit === 'owala');
+    document.getElementById('sWaterUnit').textContent = unit === 'owala' ? 'Owalas' : unit;
   }
 }
 
@@ -2721,6 +2831,69 @@ function render() {
     { id: 'steps', letter: 'S', name: 'Steps', desc: `${cfg.goalSteps.toLocaleString()} steps / day` },
     !!checks.steps, isFuture
   ));
+
+  // ── Optional: Meditation ──
+  if (cfg.optMeditation) {
+    const medDone = !!checks.meditation;
+    const medCard = document.createElement('div');
+    medCard.className = 'optional-card' + (medDone ? ' done' : '') + (isFuture ? ' locked' : '');
+    medCard.innerHTML = `
+      <div class="opt-icon">🧘</div>
+      <div class="opt-info">
+        <div class="opt-name">Meditation</div>
+        <div class="opt-desc">${medDone ? 'Done' : 'Daily practice'}</div>
+      </div>
+      <div class="check" style="${medDone ? 'border-color:var(--accent);background:var(--accent);' : ''}">
+        <svg width="12" height="10" viewBox="0 0 12 10" fill="none" style="${medDone ? '' : 'display:none;'}">
+          <path d="M1 5L4.5 8.5L11 1" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>`;
+    if (!isFuture) {
+      medCard.addEventListener('click', () => {
+        const current = !!getDayChecks(currentDay).meditation;
+        setDayCheck(currentDay, 'meditation', !current);
+        render();
+      });
+    }
+    container.appendChild(medCard);
+  }
+
+  // ── Optional: 100 Squats ──
+  if (cfg.optSquats) {
+    const squatCount = checks.squats || 0; // stored as number 0–100
+    const squatDone  = squatCount >= 100;
+    const squatCard  = document.createElement('div');
+    squatCard.className = 'optional-card' + (squatDone ? ' done' : '') + (isFuture ? ' locked' : '');
+
+    // Build 10 bubbles
+    const bubblesHtml = Array.from({ length: 10 }, (_, i) => {
+      const filled = squatCount >= (i + 1) * 10;
+      return `<div class="squat-bubble${filled ? ' filled' : ''}${isFuture ? ' locked' : ''}" data-idx="${i}"></div>`;
+    }).join('');
+
+    squatCard.innerHTML = `
+      <div class="opt-icon">🏋️</div>
+      <div class="opt-info">
+        <div class="opt-name">100 Squats</div>
+        <div class="opt-desc">${squatCount} / 100 reps</div>
+      </div>
+      <div class="squat-bubbles">${bubblesHtml}</div>`;
+
+    if (!isFuture) {
+      squatCard.querySelectorAll('.squat-bubble').forEach(bubble => {
+        bubble.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const idx      = parseInt(bubble.dataset.idx);
+          const tapValue = (idx + 1) * 10;
+          const current  = getDayChecks(currentDay).squats || 0;
+          const newVal   = current === tapValue ? tapValue - 10 : tapValue;
+          setDayCheck(currentDay, 'squats', newVal);
+          render();
+        });
+      });
+    }
+    container.appendChild(squatCard);
+  }
 
   // Check if today is fully done after rendering (catches edge cases)
   checkForCelebration();
