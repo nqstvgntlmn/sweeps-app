@@ -1161,7 +1161,7 @@
   .diet-sub-input:focus { border-color: var(--accent); }
   .diet-sub-unit { font-size: 11px; color: var(--muted); white-space: nowrap; }
 
-  /* ── Optional habit cards (Meditation, Squats) ── */
+  /* ── Optional habit cards (Meditation) ── */
   .optional-card {
     background: var(--card-bg);
     border: 1px solid var(--border);
@@ -1202,40 +1202,6 @@
   }
   .opt-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
   .optional-card.done .opt-desc { color: #3a5200; }
-
-  /* Squat bubble grid — 2 rows of 5, bottom row offset by half a bubble */
-  .squat-bubbles {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    flex-shrink: 0;
-  }
-  .squat-row {
-    display: flex;
-    gap: 10px;
-  }
-  .squat-row.offset {
-    margin-left: 17px;
-  }
-  .squat-bubble {
-    width: 24px; height: 24px;
-    border-radius: 50%;
-    border: 1.5px solid var(--border);
-    background: transparent;
-    cursor: pointer;
-    transition: background 0.15s, border-color 0.15s;
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
-    flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 9px; font-weight: 600; color: #444;
-  }
-  .squat-bubble.filled {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: #000;
-  }
-  .squat-bubble.locked { cursor: default; }
 
   /* Confetti particles ── */
   .confetti { position: fixed; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; z-index: 100; overflow: hidden; }
@@ -1622,27 +1588,6 @@
           <div class="srow-sub">Cards hidden before this date</div>
         </div>
         <input type="date" class="srow-date" id="sOptMeditationStart" style="color-scheme:dark;" />
-      </div>
-
-      <div class="srow">
-        <div class="srow-icon">🦵</div>
-        <div class="srow-info">
-          <div class="srow-label">100 Squats</div>
-          <div class="srow-sub">10 bubbles · tap to track sets of 10</div>
-        </div>
-        <label class="toggle">
-          <input type="checkbox" id="sOptSquats" onchange="onOptHabitToggle('squats')" />
-          <span class="toggle-slider"></span>
-        </label>
-      </div>
-      <!-- Start date sub-row — only visible when squats is enabled -->
-      <div id="squatsDateRow" style="display:none;" class="srow" style="background:#0f0f0f;">
-        <div class="srow-icon" style="font-size:12px;">📅</div>
-        <div class="srow-info">
-          <div class="srow-label" style="font-size:12px;">Track from</div>
-          <div class="srow-sub">Cards hidden before this date</div>
-        </div>
-        <input type="date" class="srow-date" id="sOptSquatsStart" style="color-scheme:dark;" />
       </div>
 
     </div>
@@ -2167,11 +2112,8 @@ function openSettings() {
 
   // Pre-fill optional habits toggles and start dates (safe defaults: off)
   document.getElementById('sOptMeditation').checked = !!(cfg.optMeditation);
-  document.getElementById('sOptSquats').checked     = !!(cfg.optSquats);
   document.getElementById('sOptMeditationStart').value = cfg.optMeditationStart || '';
-  document.getElementById('sOptSquatsStart').value     = cfg.optSquatsStart     || '';
   document.getElementById('meditationDateRow').style.display = cfg.optMeditation ? 'flex' : 'none';
-  document.getElementById('squatsDateRow').style.display     = cfg.optSquats     ? 'flex' : 'none';
 
   // Pre-fill goal fields
   document.getElementById('sStartDate').value    = cfg.startDate;
@@ -2233,9 +2175,7 @@ function saveSettings() {
   cfg.dietCustomName = document.getElementById('sDietCustomName').value || '';
   // Optional habits — cfg flags and start dates only, never touch data
   cfg.optMeditation      = document.getElementById('sOptMeditation').checked;
-  cfg.optSquats          = document.getElementById('sOptSquats').checked;
   cfg.optMeditationStart = document.getElementById('sOptMeditationStart').value || null;
-  cfg.optSquatsStart     = document.getElementById('sOptSquatsStart').value     || null;
 
   saveStore();
   closeSettings();
@@ -2244,7 +2184,7 @@ function saveSettings() {
 
 /**
  * Show/hide the start date picker when an optional habit is toggled.
- * @param {string} habit - 'meditation' or 'squats'
+ * @param {string} habit - 'meditation'
  */
 function onOptHabitToggle(habit) {
   const isOn    = document.getElementById(`sOpt${habit.charAt(0).toUpperCase() + habit.slice(1)}`).checked;
@@ -2884,6 +2824,14 @@ function render() {
     !!checks.steps, isFuture
   ));
 
+  // ── Supplements ──
+  // Tracking-only: always visible, no Settings toggle, no penalty/streak effect
+  // (intentionally excluded from isDayFailed / calcStreak / isDayFullyDone).
+  container.appendChild(makeHabitCard(
+    { id: 'supplements', letter: '✓', name: 'Supplements', desc: 'Daily dose' },
+    !!checks.supplements, isFuture
+  ));
+
   // ── Optional: Meditation ──
   // Only show if enabled AND current day is on/after the meditation start date
   const medStartDay = cfg.optMeditationStart
@@ -2912,51 +2860,6 @@ function render() {
       });
     }
     container.appendChild(medCard);
-  }
-
-  // ── Optional: 100 Squats ──
-  // Only show if enabled AND current day is on/after the squats start date
-  const squatStartDay = cfg.optSquatsStart
-    ? Math.max(1, Math.floor((parseDate(cfg.optSquatsStart) - parseDate(cfg.startDate)) / 86400000) + 1)
-    : 1;
-  if (cfg.optSquats && currentDay >= squatStartDay) {
-    const squatCount = checks.squats || 0;
-    const squatDone  = squatCount >= 100;
-    const squatCard  = document.createElement('div');
-    squatCard.className = 'optional-card' + (squatDone ? ' done' : '') + (isFuture ? ' locked' : '');
-
-    // Build 2 rows of 5 bubbles — top row indices 0–4, bottom row 5–9 (offset)
-    const bubblesHtml = [0, 5].map((rowStart, rowIdx) => {
-      const rowBubbles = Array.from({ length: 5 }, (_, i) => {
-        const idx    = rowStart + i;
-        const filled = squatCount >= (idx + 1) * 10;
-        return `<div class="squat-bubble${filled ? ' filled' : ''}${isFuture ? ' locked' : ''}" data-idx="${idx}">${idx + 1}</div>`;
-      }).join('');
-      return `<div class="squat-row${rowIdx === 1 ? ' offset' : ''}">${rowBubbles}</div>`;
-    }).join('');
-
-    squatCard.innerHTML = `
-      <div class="opt-icon">🦵</div>
-      <div class="opt-info">
-        <div class="opt-name">100 Squats</div>
-        <div class="opt-desc">${squatCount} / 100 reps</div>
-      </div>
-      <div class="squat-bubbles">${bubblesHtml}</div>`;
-
-    if (!isFuture) {
-      squatCard.querySelectorAll('.squat-bubble').forEach(bubble => {
-        bubble.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const idx      = parseInt(bubble.dataset.idx);
-          const tapValue = (idx + 1) * 10;
-          const current  = getDayChecks(currentDay).squats || 0;
-          const newVal   = current === tapValue ? tapValue - 10 : tapValue;
-          setDayCheck(currentDay, 'squats', newVal);
-          render();
-        });
-      });
-    }
-    container.appendChild(squatCard);
   }
 
   // Check if today is fully done after rendering (catches edge cases)
@@ -3262,7 +3165,7 @@ function copyUrl() {
  */
 function drawShareCard() {
   const canvas   = document.getElementById('shareCanvas');
-  const W = 600, H = 400;
+  const W = 600, H = 460;
   canvas.width   = W;
   canvas.height  = H;
   const ctx      = canvas.getContext('2d');
@@ -3344,18 +3247,21 @@ function drawShareCard() {
     : !!checks.water;
 
   const habits = [
-    { letter: 'S', name: 'Stretch',  done: !!checks.stretch },
-    { letter: 'W', name: 'Water',    done: waterDone },
-    { letter: 'E', name: 'Eat',      done: !!checks.eat || isCheatDay(todayNum) },
-    { letter: 'E', name: 'Exercise', done: workouts >= cfg.goalWorkouts, weekly: true, workouts, goal: cfg.goalWorkouts },
-    { letter: 'P', name: 'Pages',    done: !!checks.pages },
-    { letter: 'S', name: 'Steps',    done: !!checks.steps },
+    { letter: 'S', name: 'Stretch',     done: !!checks.stretch },
+    { letter: 'W', name: 'Water',       done: waterDone },
+    { letter: 'E', name: 'Eat',         done: !!checks.eat || isCheatDay(todayNum) },
+    { letter: 'E', name: 'Exercise',    done: workouts >= cfg.goalWorkouts, weekly: true, workouts, goal: cfg.goalWorkouts },
+    { letter: 'P', name: 'Pages',       done: !!checks.pages },
+    { letter: 'S', name: 'Steps',       done: !!checks.steps },
+    { letter: '✓', name: 'Supplements', done: !!checks.supplements },
   ];
 
+  // Row-major 2-col grid — scales cleanly regardless of habit count
+  // (last row may have a single item if the count is odd).
   habits.forEach((h, i) => {
-    const col = i < 3 ? 0 : 1;
-    const row = i < 3 ? i : i - 3;
-    const hx = 32 + col * 284, hy = 220 + row * 46, hw = 270, hh = 38;
+    const col = i % 2;
+    const row = Math.floor(i / 2);
+    const hx = 32 + col * 284, hy = 220 + row * 44, hw = 270, hh = 38;
 
     // Card background
     ctx.fillStyle   = h.done ? '#1a2200' : '#161616';
@@ -3407,7 +3313,7 @@ function drawShareCard() {
   });
 
   // ── Progress dot strip ──
-  const stripY = 366, dotSize = 6, dotGap = 2, startX = 32;
+  const stripY = 406, dotSize = 6, dotGap = 2, startX = 32;
   ctx.fillStyle = '#555'; ctx.font = '500 9px "DM Sans", sans-serif';
   ctx.fillText('PROGRESS', startX, stripY - 6);
 
